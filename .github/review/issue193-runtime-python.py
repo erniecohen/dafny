@@ -23,7 +23,24 @@ rotation = load('issue193-rotation-bit-source')
 population = load('issue193-popcount-source')
 
 
-def main():
+def inspect_python(output, kind, text):
+    generated = output.with_name(output.name + '-py')
+    files = list(generated.rglob('*.py'))
+    assert files
+    # Syntax remains compatible with the runtime's Python >=3.8 contract.
+    for file in files:
+        ast.parse(file.read_text(), feature_version=(3, 8))
+    bodies = [node for file in files for node in ast.walk(ast.parse(file.read_text()))
+              if isinstance(node, ast.FunctionDef) and node.name in ('Once64', 'Once')]
+    assert len(bodies) == 1
+    calls = [node.func.attr for node in ast.walk(bodies[0])
+             if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)]
+    assert calls.count('Id64' if kind == 'boolean' else 'Identity') == 1
+    if kind != 'population':
+        assert calls.count('Count') == 1
+
+
+def main(target='py', inspect=None, program=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dafny', required=True, type=Path)
     parser.add_argument('--z3', required=True, type=Path)
@@ -73,9 +90,9 @@ def main():
         if args.focus in ('all', 'runtime'):
             for kind, module in [('boolean', boolean), ('rotation', rotation), ('population', population)]:
                 widths = (4, 12, 64, 80) if args.quick else module.WIDTHS
-                path = verify(kind, module.program(widths))
+                path = verify(kind, program(kind, module, widths) if program else module.program(widths))
                 output = out / (mode + '-' + kind + '-runtime')
-                text = run(mode + '-' + kind + '-execute', ['run', str(path), *common, '--no-verify', '--target', 'py', '--output', str(output)])
+                text = run(mode + '-' + kind + '-execute', ['run', str(path), *common, '--no-verify', '--target', target, '--output', str(output), *(['--spill-translation'] if target != 'py' else [])])
                 rows = [line[5:].split(':') for line in text.splitlines() if line.startswith('CASE:')]
                 if kind == 'boolean':
                     keys = [(n, a, b, j % (n + 1)) for n in widths for a in module.values(n) for j, b in enumerate(module.values(n))]
@@ -106,20 +123,7 @@ def main():
                     fixed += ['STRICT:1', 'SHADOW:2', 'ONCE:1', 'OUT:3:2']
                     comparisons = len(rows)
                 assert all(line in text.splitlines() for line in fixed), kind
-                generated = output.with_name(output.name + '-py')
-                files = list(generated.rglob('*.py'))
-                assert files
-                # Syntax remains compatible with the runtime's Python >=3.8 contract.
-                for file in files:
-                    ast.parse(file.read_text(), feature_version=(3, 8))
-                bodies = [node for file in files for node in ast.walk(ast.parse(file.read_text()))
-                          if isinstance(node, ast.FunctionDef) and node.name in ('Once64', 'Once')]
-                assert len(bodies) == 1
-                calls = [node.func.attr for node in ast.walk(bodies[0])
-                         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)]
-                assert calls.count('Id64' if kind == 'boolean' else 'Identity') == 1
-                if kind != 'population':
-                    assert calls.count('Count') == 1
+                (inspect or inspect_python)(output, kind, text)
                 checks.append(dict(name=mode + '-' + kind + '-oracle', cases=len(rows), comparisons=comparisons))
         if args.focus in ('all', 'controls'):
             # The exact false/wrong-result and invalid-count checks used by C#.
@@ -138,7 +142,7 @@ def main():
                       ' IntegerBitwiseModel.unfoldShl(8,a as int,8); a << 8 // ERROR', '}']
             verify('boolean-negative', lines, True)
     (out / 'summary.json').write_text(json.dumps(dict(checks=checks, scopes=scopes), indent=2) + '\n')
-    print('Python integer-bitwise runtime checks passed')
+    print(('Python' if target == 'py' else target.capitalize()) + ' integer-bitwise runtime checks passed')
 
 
 if __name__ == '__main__':

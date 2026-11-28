@@ -4,7 +4,7 @@
 `IntegerBitwiseModel` and its explicit one-step unfold lemmas. It also enables the six basic bitwise operators on
 explicitly width-qualified integer newtypes. The optional native companion below
 provides checked conversion and Boolean bridges. The six source operators
-compile to C# and Python; runtime support for other targets remains later work. The independent
+compile to C#, Java and Python; runtime support for other targets remains later work. The independent
 `--additional-axioms` option does not expose this public interface.
 
 Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseCompiler.dfy` for
@@ -180,7 +180,7 @@ declarations. Off-built files cannot acquire the surface or width capability
 from an enabled client, including in the merged default module. No source name
 or attribute can replace the compiler-owned target. The reference call remains
 the verifier meaning in compiled contexts as well.
-C# and Python compilation of these six operators is described below; other targets reject
+C#, Java and Python compilation of these six operators is described below; other targets reject
 compiled uses explicitly.
 
 `issue193-newtype-operators.py` verifies actual source clients against M1 at widths
@@ -376,7 +376,7 @@ inferred from the carrier. These rules refine the weighted-digit reference:
 masking is remainder modulo a power of two, complement flips exactly those
 digits, and the two shifts move their indices with zero fill.
 
-Python compilation is described below. Other targets report an explicit
+Java and Python compilation are described below. Other targets report an explicit
 unsupported-feature diagnostic. The fixed
 reference interface remains ghost-only. Other target implementations, native
 rotation bridges and rotation/bit/population-count source surface were separate work.
@@ -520,3 +520,42 @@ both resolvers and additional-axiom settings. Serial backend mutations and
 paired parent Boogie/verdict/per-VC resource and option-off generated-source
 comparisons cover the compilation boundary. C# remains qualified separately;
 other targets retain an explicit unsupported-feature diagnostic.
+
+
+## Java runtime lowering for integer newtypes
+
+This opt-in runtime milestone stacks on https://github.com/erniecohen/dafny/pull/625.
+Java compiles the same integer-newtype Boolean, shift, rotation, bit-query and
+population-count surface. Resolution and verification remain the checked
+compiler-reference path. No axiom, assumption, count check or result predicate
+changes.
+
+The backend reuses the existing beta-redex emitter to bind operands once,
+left to right, outside a lambda, and unbox its parameters inside the body.
+Native carriers at semantic widths up to 64 use long intermediates. Unsigned
+bytes, shorts and ints are widened without sign extension; unsigned longs keep
+their complete bit pattern. A mask retains the low N digits after complement
+or left shift. Right shift uses `>>>`, and full-width shifts and rotation
+endpoints are guarded before Java can mask a host count. The same weighted-digit
+argument as for C# applies: truncation modulo `2^64` commutes with reduction
+modulo `2^N` for N at most 64. Rotation parts occupy disjoint digit positions.
+
+Nonnative values and wider semantic words use BigInteger operations and an
+N-bit mask. A native value entering that path is observed through the existing
+unsigned conversion helper where needed. Only the final result is converted
+back to its checked native carrier. Native population count uses Long.bitCount;
+BigInteger.bitCount counts nonnegative arbitrary-precision values. Both counts
+become BigInteger naturals. Bit queries reuse the source right-shift/parity
+elaboration. These APIs are available within the backend's existing Java target;
+no runtime-version requirement changes.
+
+`issue193-runtime-java.py` uses the Python gate's shared runner with the same C#
+program generators and independent arithmetic-digit oracles. It verifies complete
+drivers, checks exact runtime case identities, both source resolvers and axiom
+settings, unsigned carrier boundaries, strict predicates and single argument
+evaluation. An extra 80-bit semantic word on an unsigned 64-bit carrier checks
+both endpoints and a high-bit wrap that distinguishes unsigned BigInteger
+observation from sign extension. The same negative and live-false controls,
+parent Boogie/verdict/resource comparisons, cache checks, and serial backend
+mutations qualify the boundary. The original Python entry point retains its
+existing CLI, programs, oracle checks and Python 3.8 syntax inspection.
