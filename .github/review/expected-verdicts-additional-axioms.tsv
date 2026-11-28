@@ -1355,6 +1355,7 @@ git-issues/github-issue-23-lambda-cost.dfy	0	1 verified, 0 errors
 git-issues/github-issue-23-lambda.dfy	4	1 verified, 1 error	11
 git-issues/github-issue-23-ordinal-subset.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-23-ordinal-undefined.dfy	4	0 verified, 2 errors	8,9
+git-issues/github-issue-241-batch-gc.dfy	4	2 verified, 1 error	25
 git-issues/github-issue-241-cache-background.dfy	4	29 verified, 4 errors	39,57,75,80
 git-issues/github-issue-241-release-verified-modules.dfy	4	24 verified, 1 error	69
 git-issues/github-issue-241-translation-workers.dfy	4	18 verified, 1 error	112,117

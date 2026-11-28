@@ -1,0 +1,1 @@
+Preserve console diagnostic ordering when the verification CLI journals startup output for `--batch-gc`, including when the option is disabled.
