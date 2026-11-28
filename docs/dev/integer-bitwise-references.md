@@ -660,3 +660,11 @@ quotient/remainder arithmetic. Additional 53/54-bit checks straddle native
 Number's precision boundary. The same strict/narrow predicates, full-width counts,
 single-evaluation inspections, invalid-count and wrong-result controls, and
 reachable `assert false` cases used for the other runtimes remain covered.
+
+The JavaScript launcher also has a separate backpressure regression:
+`javascript-process-pipes.py` sends output larger than pipe capacity to both
+redirected streams, in text and JSON modes, for successful and failing child
+exits. Both pipes drain concurrently through the shared process waiter. The
+status writer retains stdout until disposal, so it publishes the complete
+output once. Restoring serial stderr-before-stdout draining is detected by a
+bounded timeout with a passing clean control.
