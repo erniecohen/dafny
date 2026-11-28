@@ -317,9 +317,67 @@ invalid-caller rejection, or fail contract well-formedness when the guard define
 a later premise (the count/divisor guards in `RightArithmetic` and `LeftArithmetic`). Exhaustion never counts as a control or mutation pass.
 The proof/control ceilings remain 2,000,000/200,000 resource units per scope.
 
-Remaining native equations include multiplication, unsigned
-division/remainder, ordering, rotations and population count. General word APIs
-at other widths and runtime lowering of integer-newtype operators also remain.
+
+## Checked native unsigned division and remainder
+
+Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeDivision.dfy`
+with `--integer-bitwise`. The modules `Std.Arithmetic.IntegerBitwiseNativeDivision8`,
+`16`, `32` and `64` provide `Divide(x,y)` and `Remainder(x,y)`. Both require
+`y != 0` and establish the unsigned observations
+`(x/y) as int == (x as int)/(y as int)` and
+`(x%y) as int == (x as int)%(y as int)`, respectively. Bounded integer clients
+compose these facts with the existing checked round trips. A result cast still
+checks the complete destination predicate, including stricter predicates that
+exclude zero. This companion adds no runtime lowering of integer-newtype operators.
+
+### Model and checked proof boundary
+
+Interpret a word by its unsigned value U in [0,2^N). For a nonzero divisor y,
+let d=U(y)>0, q=floor(U(x)/d) and r=U(x)-q*d. Euclidean division gives
+U(x)=q*d+r and 0<=r<d. Also q<=U(x)<2^N and r<d<2^N, so both results fit
+without wrapping. SMT unsigned division and remainder denote these same words;
+their unsigned integer observations are q and r. The nonzero premise excludes
+SMT's totalized zero-divisor case and satisfies Dafny's source-level checks.
+
+The eight public equations are proved by long-division induction on the
+unsigned dividend. Opaque quotient and remainder functions keep native division
+out of the integer argument. A recursive call handles the high digits `x >> 1`;
+the next trial remainder is twice its remainder plus the low digit `x & 1`.
+The checked bounds make these additions exact. Comparing the trial remainder
+with the divisor determines the next quotient digit and whether to subtract.
+Euclidean uniqueness then proves the integer quotient and remainder equations.
+The recursion explicitly decreases the unsigned dividend; automatic induction
+is disabled.
+
+The native recurrence is checked separately for each possible leading divisor
+bit, written as a literal one followed by a narrower word. A chain of checked
+dispatchers covers every nonzero divisor. Masking precedes narrowing, so every
+cast is checked. These native bodies use the default bitvector engine with
+`--solver-option O:smt.case_split=1`; there is no integer-blasting engine or new
+axiom. The existing Boolean, conversion and modular-addition dependencies are
+checked separately under their existing default search. Ordinary clients retain
+their default solver settings. Including the companion remains explicit, with
+no compiler or packaged-library change.
+
+Qualification checks every proof declaration and the complete dependency
+closure, symbolic native and composed integer clients, under both resolvers
+with additional axioms off/on. Concrete witnesses inhabit every helper's
+premises. Boundary clients cover zero numerators, divisor one, equal operands,
+exact and inexact division, smaller numerators, maximum words and high-bit
+divisors. Wrong results, signed interpretations, omitted remainders, zero
+divisors, invalid conversions and stricter result predicates have designated
+negative controls. Reachable false assertions follow every helper and the two
+public rules together. Controls run with default search and the body's native
+case split; they must be conclusively rejected, without exhaustion or timeout.
+
+Serial mutations negate a fact from every proof declaration on concrete
+inhabited inputs, alter each opaque quotient/remainder definition, and remove
+each public nonzero premise. Removed premises must fail division-by-zero
+well-formedness checks. Each mutant has its own process group and an explicit
+wall limit of three times the clean body baseline (at least three seconds).
+A mutant timeout counts as killed; the clean baseline and ordinary controls
+must complete conclusively. Body/client and negative-control ceilings remain
+2,000,000 and 200,000 resource units per scope, respectively.
 
 ## Checked native modular subtraction
 

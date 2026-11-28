@@ -1,0 +1,1 @@
+Adds explicitly included, checked unsigned division and remainder bridges at native bitvector widths 8, 16, 32 and 64 under `--integer-bitwise`, with nonzero-divisor checks and no added axioms or compiler changes. The equations use checked long-division proofs with the default bitvector engine.
