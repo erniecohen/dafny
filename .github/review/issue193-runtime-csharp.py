@@ -241,10 +241,10 @@ def main():
         if mode == modes[0]:
             unsupported = out/'unsupported.dfy'
             unsupported.write_text('newtype {:bitWidth 8} U=x:nat | x<256\nfunction Unsupported(a:U,b:U):U { a & b }\n')
-            for target in ('js','rs'):
+            for target in ('rs',):
                 target_options = ['--enforce-determinism'] if target == 'rs' else []
                 text = run(mode+'-unsupported-'+target,['translate',target,str(unsupported),*common,*target_options,'--no-verify','--output',str(out/('unsupported-'+target))],3)
-                assert 'compiled integer bitwise operators are currently supported only by the C#, C++, Go, Java and Python targets' in text
+                assert 'compiled integer bitwise operators are currently supported only by the C#, C++, Go, Java, JavaScript and Python targets' in text
     (out/'summary.json').write_text(json.dumps(dict(checks=checks,scopes=scopes),indent=2)+'\n')
     print('C# integer-bitwise runtime checks passed')
 
