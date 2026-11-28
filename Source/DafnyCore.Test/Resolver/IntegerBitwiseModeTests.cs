@@ -79,6 +79,39 @@ public class IntegerBitwiseModeTests {
 
 
   [Theory]
+  [InlineData(false, false, false)]
+  [InlineData(false, false, true)]
+  [InlineData(false, true, false)]
+  [InlineData(false, true, true)]
+  [InlineData(true, false, false)]
+  [InlineData(true, false, true)]
+  [InlineData(true, true, false)]
+  [InlineData(true, true, true)]
+  public async Task SourceMembersHonorRecordedFileMode(bool refreshed, bool recursive, bool recordedOff) {
+    DafnyType.ResetScopes();
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    options.Set(CommonOptionBag.IntegerBitwise, true);
+    options.Set(CommonOptionBag.TypeSystemRefresh, refreshed);
+    options.Set(CommonOptionBag.MemberInvariants, recursive);
+    options.Set(CommonOptionBag.RecursiveModules, recursive);
+    var reporter = new BatchErrorReporter(options);
+    var uri = new Uri("untitled:integer-bitwise-members-mode.dfy");
+    const string declarations = "newtype {:bitWidth 8} U=x:nat | x<256 " +
+      "ghost function Left(a:U,k:int):U { a.RotateLeft(k) } " +
+      "ghost function Right(a:U,k:int):U { a.RotateRight(k) } " +
+      "ghost function Bit(a:U,i:int):bool { a.bit(i) }";
+    var source = recursive ? "module A { import B " + declarations + " } module B { import A }" : declarations;
+    var parsed = await ProgramParser.Parse(source, uri, reporter);
+    Assert.Equal(0, reporter.ErrorCount);
+    if (recordedOff) {
+      parsed.Program.Compilation.IntegerBitwiseDisabledSources = new HashSet<Uri> { uri };
+    }
+    await new ProgramResolver(parsed.Program).Resolve(CancellationToken.None);
+    Assert.Equal(recordedOff || recursive && !refreshed, reporter.ErrorCount > 0);
+  }
+
+  [Theory]
   [InlineData(false)]
   [InlineData(true)]
   public async Task IntegerComplementConstantFoldingDoesNotUseABitvectorCarrier(bool refreshed) {

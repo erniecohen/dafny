@@ -2952,7 +2952,16 @@ and what information it produces about the verification process.
   Binary operands have the same newtype, and shift counts satisfy `0 <= k <= N`.
   Disabled by default. These six operators compile to C# using native integer
   operators for native newtypes and BigInteger otherwise. Other targets reject
-  compiled uses. Rotation and population-count syntax remain later work. Include
+  compiled uses. The members `x.RotateLeft(k)` and `x.RotateRight(k)` return the
+  same newtype after checking its entire predicate; their integer count must
+  satisfy `0 <= k <= N`. Both endpoints return x. The query `x.bit(i)` returns
+  bool, requires an integer index `0 <= i < N`, and does not require any
+  intermediate value to satisfy the newtype predicate. These members compile
+  to C# at the declared semantic width, including when native storage is
+  narrower. They are direct calls, not first-class function values. Their names
+  are reserved on enabled width declarations; collisions with user members are
+  errors. Opaque exports expose no such members. Population-count syntax remains
+  later work. Include
   the optional `IntegerBitwiseCompiler.dfy` companion for checked range and algebra
   contracts. `IntegerBitwiseNative.dfy` provides checked native conversion and
   Boolean bridges at widths 8, 16, 32 and 64, independently of additional axioms.

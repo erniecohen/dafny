@@ -1986,6 +1986,21 @@ namespace Microsoft.Dafny {
           // "c.requires" and "c.reads", for a value "c" of a bounded type, are those of "c.erase" (issue 266)
           selected = erased;
         }
+        if (args != null && IntegerBitwiseOperations.IsSourceMember(name) && IntegerBitwiseOperations.Enabled(resolver, expr.Origin) &&
+            Constraints.FindDefinedPreType(selected.PreType, false) is { } integerReceiver &&
+            IntegerBitwiseOperations.DeclaredWidth(integerReceiver.Decl) != null) {
+          foreach (var binding in args) {
+            ResolveExpression(binding.Actual, resolutionContext);
+            AddSubtypeConstraint(Type2PreType(Type.Int), binding.Actual.PreType, binding.Actual.Origin,
+              "integer bitwise count or index must have type int (got {1})");
+          }
+          var result = IntegerBitwiseOperations.ElaborateMember(resolver, expr,
+            PreType2TypeUtil.PreType2FixedType(integerReceiver), args);
+          ResolveExpression(result, resolutionContext);
+          expr.ResolvedExpression = result;
+          expr.PreType = result.PreType;
+          return result;
+        }
         var (member, tentativeReceiverPreType) = FindMember(expr.Origin, selected.PreType, name, resolutionContext,
           selected.Resolved != null);
         if (member != null) {
@@ -2172,6 +2187,9 @@ namespace Microsoft.Dafny {
       if (e.Lhs.PreType == null) {
         // some error had been detected during the attempted resolution of e.Lhs
         e.Lhs.PreType = CreatePreTypeProxy("unresolved ApplySuffix LHS");
+      }
+      if (r is StmtExpr && e.AtTok != null && e.Lhs is ExprDotName dot && IntegerBitwiseOperations.IsSourceMember(dot.SuffixName)) {
+        ReportError(e.AtTok, "an @-label cannot be applied to an integer bitwise member");
       }
       Label atLabel = null;
       if (e.AtTok != null) {
