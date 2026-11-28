@@ -1,0 +1,4 @@
+CommonJS refinement source, archive and separate-link runtime comparisons passed.
+Both wrapper modes, scheduled resolution, constructors, partial classes and trait identities checked.
+16 negative/vacuity assertions and 4 rejection controls passed.
+Dafny commands checked: 18.

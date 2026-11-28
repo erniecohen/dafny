@@ -70,9 +70,9 @@ public class JavaScriptBackend : ExecutableBackend {
           "JavaScript recursive groups require require-based extern module names to be unqualified ASCII identifiers that do not conflict with unescaped JavaScript keywords or runtime bindings");
         return;
       }
-      if (moduleQualifier != null && module.RecursiveGroup == null) {
+      if (moduleQualifier != null && !JavaScriptCodeGenerator.IsRecursiveGroupContext(module)) {
         Reporter.Error(MessageSource.Compiler, module.Origin,
-          "JavaScript recursive groups require preloaded extern module objects for refinements and imported trait ancestor modules; require-based linkage in these contexts is not yet supported");
+          "JavaScript recursive groups require preloaded extern module objects for imported trait ancestor modules outside recursive groups; require-based linkage in this context is not yet supported");
         return;
       }
       foreach (var type in module.TopLevelDecls.OfType<TopLevelDeclWithMembers>().Where(type =>

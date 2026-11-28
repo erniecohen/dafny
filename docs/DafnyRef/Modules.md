@@ -1227,7 +1227,9 @@ that a later stage would have to reject:
   Ordinary module and type names remain inside a shared initialization closure.
   Concrete refinements, including descendants of abstract refinements, support fully
   imported and partial extern classes when each concrete module supplies its own
-  preloaded extern object. Fully imported extern traits with fully imported extern
+  preloaded extern object or CommonJS library. A required concrete refinement
+  extends that library's exported object, preserving its native constructors and
+  trait identities; abstract intermediates emit no loader. Fully imported extern traits with fully imported extern
   ancestors retain their runtime identities in groups and concrete refinements,
   including ancestors in acyclic modules emitted with the group. An ancestor supplied
   only through `--library` must be linked by a producer containing the group.
