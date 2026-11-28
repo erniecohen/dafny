@@ -161,13 +161,10 @@ public class JavaScriptBackend : ExecutableBackend {
       }
       await nodeProcess.StandardInput.FlushAsync();
       nodeProcess.StandardInput.Close();
-      // Fixes a problem of Node on Windows, where Node does not prints to the parent console its standard outputs.
-      await PassthroughBuffer(nodeProcess.StandardError, Options.ErrorWriter);
+      // Drain both pipes before waiting for EOF: either one can fill while Node
+      // still has pending output. StatusWriter publishes stdout once on disposal.
       await using var tempOutputWriter = Options.OutputWriter.StatusWriter();
-      await PassthroughBuffer(nodeProcess.StandardOutput, tempOutputWriter);
-      await nodeProcess.WaitForExitAsync();
-#pragma warning disable VSTHRD00
-      return nodeProcess.ExitCode == 0;
+      return await WaitForExit(nodeProcess, tempOutputWriter, Options.ErrorWriter) == 0;
     } catch (System.ComponentModel.Win32Exception e) {
       await outputWriter.Status($"Error: Unable to start node.js ({psi.FileName}): {e.Message}");
       return false;

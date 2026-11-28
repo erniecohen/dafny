@@ -1,0 +1,1 @@
+JavaScript execution drains stdout and stderr concurrently, allowing programs with large output on either stream to complete while preserving buffered status output and child exit status.
