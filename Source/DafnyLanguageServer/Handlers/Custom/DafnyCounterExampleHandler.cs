@@ -78,13 +78,26 @@ namespace Microsoft.Dafny.LanguageServer.Handlers.Custom {
       }
 
       public CounterExampleList GetCounterExamples() {
-        if (!ideState.Counterexamples.Any()) {
+        var cachedModels = ideState.CanVerifyStates.Values.SelectMany(file => file.Values)
+          .SelectMany(symbol => symbol.VerificationTasks.Values)
+          .Where(task => task.RawStatus is VerificationWorkCompleted && task.Status >= PublishedVerificationStatus.Error)
+          .SelectMany(task => Caching.VerificationTaskFacts.IdeReport(BoogieVerificationReporting.GetTask(task.Task))?.Models ?? [])
+          .ToList();
+        if (!ideState.Counterexamples.Any() && cachedModels.Count == 0) {
           logger.LogDebug($"got no counter-examples for version {ideState.Version}");
           return new CounterExampleList();
         }
 
+        // Cached views outlive a request, while model rendering maintains mutable display state.
+        CounterExampleItem[] CachedCounterExamples(DafnyModel model) {
+          lock (model) {
+            model.AssignConcretePrimitiveValues();
+            return GetCounterExamples(model).ToArray();
+          }
+        }
         var counterExamples = GetLanguageSpecificModels(ideState.Counterexamples)
           .SelectMany(GetCounterExamples)
+          .Concat(cachedModels.SelectMany(CachedCounterExamples))
           .WithCancellation(cancellationToken)
           .ToArray();
         return new CounterExampleList(counterExamples);

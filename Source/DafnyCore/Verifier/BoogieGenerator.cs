@@ -867,6 +867,7 @@ namespace Microsoft.Dafny {
       Type.ResetScopes();
       ancestorTypeCache.Clear();
       try {
+        translationGlobalInputs = TranslationGlobalInputs.For(p, forModule);
         proofDependencies.SetCurrentDefinition(forModule.FullName, forModule.EnclosingLiteralModuleDecl);
         return DoTranslationCore(p, forModule);
       } finally {

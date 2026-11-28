@@ -83,6 +83,10 @@ public class CommonOptionBag {
   public static readonly Option<bool> TranslationCache = new("--translation-cache",
     "Reuse module translations in this process using semantic resolution keys. " +
     "Requires --type-system-refresh. Uses the default module-scoped translator. Stores no files or verification results.");
+  public static readonly Option<bool> TranslationGlobalInputs = new("--translation-global-inputs",
+    "Freeze current modular-termination classifications into module translation identities, allowing eligible " +
+    "--translation-cache and --persistent-translation hits when modular termination is active. Requires --type-system-refresh. " +
+    "Unsupported global reads run normally without publishing a translation snapshot.");
   public static readonly Option<bool> OptimizeTranslationCopy = new("--optimize-translation-copy",
     "Use generated field-copy routines when materializing Boogie module graphs, reducing front-end reflection work. " +
     "Preserves graph aliases, generated names, solver input and resource counts. Defaults to false; " +
@@ -91,7 +95,10 @@ public class CommonOptionBag {
     "Also keep module translations and whole-module results in the --verification-cache directory, across processes. " +
     "Requires --verification-cache and --type-system-refresh. A module whose translation key is unchanged is not translated again, " +
     "and a module whose regenerated Boogie program is unchanged is not prepared or solved again, when every one of its tasks " +
-    "had a valid or resource-bounded resource-exhausted result through the result cache. CSV, TRX and ordinary JSON/text logs support replay and mark replayed timing. JSON/text retain current assertion and dependency locations and descriptions. Verification coverage and contradictory/redundant-assumption warnings support replay; proof-refactoring analysis and unsupported reporting options run normally. The language server retains current native tasks and reuses eligible solver responses after fresh translation and preparation.");
+    "had a valid or resource-bounded resource-exhausted result through the result cache. CSV, TRX and ordinary JSON/text logs support replay and mark replayed timing. JSON/text retain current assertion and dependency locations and descriptions. Verification coverage and contradictory/redundant-assumption warnings support replay; proof-refactoring analysis and unsupported reporting options run normally. The language server retains current native tasks by default; --persistent-ide-reports also allows complete whole-module IDE reports.");
+  public static readonly Option<bool> PersistentIdeReports = new("--persistent-ide-reports",
+    "With --persistent-translation, store complete IDE assertion reports and replay eligible whole modules in the language server. " +
+    "Requires --type-system-refresh. With --persistent-counterexamples, complete resource-bounded failed reports include models, diagnostics and code actions. Incomplete reports and explicitly reseeded requests retain native preparation.");
   public static readonly Option<bool> PersistentCounterexamples = new("--persistent-counterexamples",
     "With --persistent-translation, also reuse resource-bounded failed module results with complete current-source diagnostics. " +
     "Requires no time limit. Model extraction also supports complete native model payloads with current-source state descriptions; unsupported model shapes use the native task path.");
@@ -553,7 +560,7 @@ Value implementations must retain their type parameters in compatible parent pos
   };
 
   public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
-    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C#, Java, Go, JavaScript, Python and Rust targets; JavaScript and Rust groups may not contain extern declarations. Python group members containing extern or omitted declarations require complete foreign Python modules; a Python package group must retain a compiled member. Rust group programs require explicit array initialization and the Rust backend's existing --enforce-determinism restriction. Replacement in a group is not yet supported.") {
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C#, Java, Go, JavaScript, Python and Rust targets; JavaScript and Rust groups support extern linkage, with target-specific restrictions described in the reference manual. JavaScript extern modules may be preloaded objects or CommonJS libraries loaded with require. Python group members containing extern or omitted declarations require complete foreign Python modules; a Python package group must retain a compiled member. Rust group programs require explicit array initialization and the Rust backend's existing --enforce-determinism restriction. Replacement in a group is not yet supported.") {
     IsHidden = true
   };
 
@@ -1021,9 +1028,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
     });
     OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
+    OptionRegistry.RegisterOption(TranslationGlobalInputs, OptionScope.Cli);
     OptionRegistry.RegisterOption(OptimizeTranslationCopy, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentTranslation, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentTranslationAudit, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PersistentIdeReports, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentCounterexamples, OptionScope.Cli);
     TranslationWorkers.AddValidator(result => {
       if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {

@@ -246,8 +246,10 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
 
 
       var currentlyHoveringPostcondition =
-        assertionNode.GetCounterExample() is ReturnCounterexample returnCounterexample2 &&
-          !returnCounterexample2.FailingReturn.tok.GetLspRange().Contains(position);
+        (assertionNode.Report is { CounterexampleKind: "return", SecondaryOrigin: { } returned }
+          ? !returned.GetLspRange().Contains(position)
+          : assertionNode.GetCounterExample() is ReturnCounterexample returnCounterexample2 &&
+            !returnCounterexample2.FailingReturn.tok.GetLspRange().Contains(position));
 
       var obsolescence = assertionNode.StatusCurrent switch {
         CurrentStatus.Current => "",
@@ -258,12 +260,14 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
       string GetDescription(Boogie.ProofObligationDescription? description) {
         switch (assertionNode?.StatusVerification) {
           case GutterVerificationStatus.Verified: {
-              var successDescription = description?.SuccessDescription ?? "_no message_";
+              var successDescription = assertionNode.Report?.Description ?? description?.SuccessDescription ?? "_no message_";
               return $"{obsolescence}<span style='color:green'>**Success:**</span> " +
                      successDescription;
             }
           case GutterVerificationStatus.Error:
-            var failureDescription = description?.FailureDescription ?? "_no message_";
+            var failureDescription = assertionNode.Report is { } report
+              ? currentlyHoveringPostcondition ? report.PostconditionFailureDescription : report.FailureDescription
+              : description?.FailureDescription ?? "_no message_";
             if (description is EnsuresDescription ensuresDescription) {
               if (currentlyHoveringPostcondition) {
                 failureDescription = ensuresDescription.FailureDescriptionSingle;
@@ -322,7 +326,9 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
         return deltaInformation;
       }
 
-      if (counterexample is ReturnCounterexample returnCounterexample) {
+      if (assertionNode.Report is { } report) {
+        information += GetDescription(null) + (currentlyHoveringPostcondition ? report.PostconditionMoreInformation : report.MoreInformation);
+      } else if (counterexample is ReturnCounterexample returnCounterexample) {
         if (assertionNode.StatusVerification == GutterVerificationStatus.Error &&
             returnCounterexample.FailingEnsures.Description.SuccessDescription != "assertion always holds") {
           // Specialization for ensures marked with {:error} attribute
@@ -381,7 +387,7 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
           : "");
       }
 
-      if (assertionNode?.GetCounterExample() is CallCounterexample) {
+      if (assertionNode?.Report?.CounterexampleKind == "call" || assertionNode?.GetCounterExample() is CallCounterexample) {
         information += "  \n" + (assertionNode.SecondaryPosition != null
           ? $"Failing precondition: {Path.GetFileName(assertionNode.Filename)}({assertionNode.SecondaryPosition.Line + 1}, {assertionNode.SecondaryPosition.Character + 1})"
           : "");

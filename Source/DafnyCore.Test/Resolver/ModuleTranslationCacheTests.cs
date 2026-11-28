@@ -361,13 +361,15 @@ public class ModuleTranslationCacheTests {
     Assert.NotEqual(ModuleTranslationCache.Emit(first, before.Options), ModuleTranslationCache.Emit(third, other.Options));
   }
 
-  internal static async Task<Microsoft.Dafny.Program> Resolve(string source, string? unrelated = null, bool refresh = false, bool modularTermination = false, int threads = 1, bool cached = true, bool memberInvariants = false, bool optimizeCopy = false) {
+  internal static async Task<Microsoft.Dafny.Program> Resolve(string source, string? unrelated = null, bool refresh = false, bool modularTermination = false, int threads = 1, bool cached = true, bool memberInvariants = false, bool globalInputs = false, bool decreasesOrders = false, bool optimizeCopy = false) {
     DafnyType.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     options.Set(CommonOptionBag.ModularTermination, modularTermination);
     options.Set(CommonOptionBag.ResolutionThreads, threads);
     options.Set(CommonOptionBag.TranslationCache, cached);
+    options.Set(CommonOptionBag.TranslationGlobalInputs, globalInputs);
+    options.Set(CommonOptionBag.DecreasesOrders, decreasesOrders);
     options.Set(CommonOptionBag.OptimizeTranslationCopy, optimizeCopy);
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
     options.Set(CommonOptionBag.MemberInvariants, memberInvariants);

@@ -8,6 +8,7 @@ cli	allow-warnings	--allow-warnings	System.CommandLine.Option`1[System.Boolean]	
 cli	analyze-proofs	--analyze-proofs	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	ancestor-qualified-module-ids	--ancestor-qualified-module-ids	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	arithmetic-solver	--arithmetic-solver	System.CommandLine.Option`1[System.Int32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	batch-gc	--batch-gc	System.CommandLine.Option`1[System.Boolean]	execution	startup GC execution policy; child preserves arguments and solver capacity; changes no generated obligation or solver option
 cli	bitvector-map-keys	--bitvector-map-keys	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	boogie	--boogie	System.CommandLine.Option`1[System.Collections.Generic.IEnumerable`1[System.String]]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
 cli	bootstrapping	--bootstrapping	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
@@ -131,6 +132,7 @@ cli	outer-module	--outer-module	System.CommandLine.Option`1[System.String]	input
 cli	output	--output,-o	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
 cli	performance-stats	--performance-stats	System.CommandLine.Option`1[System.Int32]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	persistent-counterexamples	--persistent-counterexamples	System.CommandLine.Option`1[System.Boolean]	profile	module-result reporting eligibility only; changes no task input or solver command
+cli	persistent-ide-reports	--persistent-ide-reports	System.CommandLine.Option`1[System.Boolean]	current-report	controls eligibility of complete current-source IDE report adapters; changes no solver input
 cli	persistent-translation	--persistent-translation	System.CommandLine.Option`1[System.Boolean]	profile	explicit opt-in module tables beside the task results; keyed by translation descriptor, Boogie graph and verification environment; unsupported modules and reporting options bypass
 cli	persistent-translation-audit	--persistent-translation-audit	System.CommandLine.Option`1[System.Boolean]	profile	never replays a module; compares stored translations and module results with fresh ones and reports differences
 cli	pipeline-profile	--pipeline-profile	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
@@ -193,6 +195,7 @@ cli	test-assumptions	--test-assumptions	System.CommandLine.Option`1[Microsoft.Da
 cli	track-print-effects	--track-print-effects	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	trait-rank-decreases	--trait-rank-decreases	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	translate-standard-library	--translate-standard-library	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	translation-global-inputs	--translation-global-inputs	System.CommandLine.Option`1[System.Boolean]	input	freezes current global classifications and binds them to translation identities before task lookup; preserves native obligations and solver input
 cli	translation-record	--translation-record	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.IO.FileInfo]]	command-setup	setup or another command; executes before/outside proof transport
 cli	translation-record-output	--translation-record-output	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
 cli	ready-module-verification	--ready-module-verification	System.CommandLine.Option`1[System.Boolean]	execution	module readiness changes scheduling only; fresh solver per proof, identical translation and assertion maps

@@ -28,7 +28,7 @@ Mutating either replay guard or removing the IDE's native-task request must fail
 This closes the native-evidence eligibility boundary, not all of the IDE milestone
 in [the content-addressed cache design](261-content-addressed-caches.md). Persistent
 whole-module IDE replay needs a complete report adapter and current-source assertion
-metadata. Finalized global-analysis identities are separate work. The scheduling
+metadata. Finalized global-analysis inputs are described in [the global-input design](261-global-inputs.md). The scheduling
 acceptance covered below uses current native tasks and solver-response replay.
 
 ## Shared task identities across front ends
@@ -112,3 +112,40 @@ empty-store audit must not publish. Client checks require fresh solver starts on
 successive audited generations with both new and reused solver engines. The
 stdio regression requires every audited task to report non-replayed timing.
 Mutating either transport guard or the session's audit wiring must fail.
+
+
+## Complete failed and mixed-outcome whole-module reports
+
+The opt-in `--persistent-ide-reports` also accepts complete failed and
+resource-exhausted tasks. Every scheduled task must have source-bound assertion
+metadata. Failed tasks additionally require the existing
+`--persistent-counterexamples` capability and a complete native model payload for
+every counterexample. Missing or unsupported evidence keeps native preparation;
+no successful placeholder is substituted for a failed task.
+
+Reports preserve each assertion's outcome, primary and secondary locations,
+related ranges, failure descriptions and nested hover details. Counterexample
+requests consume detached models rebound to current source. Concurrent requests
+serialize rendering of each mutable model. Stale tasks from an unselected file
+do not contribute models after a project edit. Code actions carry
+printed assertion syntax, not executable verifier objects; the existing insertion
+algorithm finds the insertion point in the current parsed program. Diagnostic
+replay continues through the existing portable failure reports. Completed scope
+status and error-limit reporting include persisted tasks.
+
+Acceptance compares fresh native execution, cold publication, real whole-module
+key and graph hits, and independent audit. Compare per-VC outcomes/resources,
+diagnostics, gutter trees, hovers, repeated model requests and resolved code-action
+edits. Separate resource-exhaustion and quantified-action cases exercise result
+replay with independently resolved current source on each restart. Corrupt and
+incomplete payloads must miss; explicit reseeding retains native tasks. The audit
+compares every report field, including model payloads and action syntax.
+
+
+The quantified report case deliberately resolves current source afresh on each
+restart. A separate resolution-only check against the existing implementation
+finds that repeated in-process persistent resolution can be rejected by the
+resolution oracle because a process-generated `QuantifierExpr.UniqueId` differs.
+That identity-check boundary remains separate work; this adapter does not relax
+the resolution comparison. The mixed-outcome case still enables the resolution
+oracle, and independent verification/report audit remains enabled for every case.

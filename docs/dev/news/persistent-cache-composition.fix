@@ -1,0 +1,3 @@
+Expanded persistent-cache regression coverage checks resolution equality together
+with whole-module IDE replay, including quantified counterexamples, resource
+exhaustion, corrupted snapshots and current-source code actions.

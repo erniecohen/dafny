@@ -28,7 +28,15 @@ public static class VerifyCommand {
     OptionRegistry.RegisterOption(VerificationModuleWindowMemory, OptionScope.Cli);
     OptionRegistry.RegisterOption(ReleaseVerifiedModules, OptionScope.Cli);
     OptionRegistry.RegisterOption(PerformanceStatisticsOption, OptionScope.Cli);
+    OptionRegistry.RegisterOption(BatchGc, OptionScope.Cli);
   }
+
+  public static readonly Option<bool> BatchGc = new("--batch-gc",
+    "Run verification in a process configured at startup with background garbage collection disabled. " +
+    "This favors throughput over responsiveness on allocation-heavy projects. " +
+    "Requires the command-line executable. Default: false.") {
+    IsHidden = true
+  };
 
   public static readonly Option<int> PerformanceStatisticsOption = new("--performance-stats",
     "Report a summary of the verification performance. " +
@@ -74,10 +82,13 @@ public static class VerifyCommand {
   private static IReadOnlyList<Option> VerifyOptions =>
     new Option[] {
         PerformanceStatisticsOption,
+        BatchGc,
         CommonOptionBag.TranslationCache,
+        CommonOptionBag.TranslationGlobalInputs,
         CommonOptionBag.OptimizeTranslationCopy,
         CommonOptionBag.PersistentTranslation,
         CommonOptionBag.PersistentTranslationAudit,
+        CommonOptionBag.PersistentIdeReports,
         CommonOptionBag.PersistentCounterexamples,
         CommonOptionBag.TranslationWorkers,
         CommonOptionBag.TranslationWorkersStress,
@@ -93,7 +104,10 @@ public static class VerifyCommand {
       Concat(DafnyCommands.ConsoleOutputOptions).
       Concat(DafnyCommands.ResolverOptions);
 
-  public static async Task<int> HandleVerification(DafnyOptions options) {
+  public static Task<int> HandleVerification(DafnyOptions options) =>
+    VerificationGc.RunVerification(options, () => HandleVerificationCore(options));
+
+  private static async Task<int> HandleVerificationCore(DafnyOptions options) {
     var batch = options.GetOrOptionDefault(FilterPositionBatch).ToArray();
     string? conflict = null;
     if (options.Get(CommonOptionBag.ReadyModuleVerification) &&

@@ -175,7 +175,7 @@ public partial class BoogieGenerator {
   /// </summary>
   List<Expression> AdmittedMemberBound(Expression value) {
     if (ModularTermination.AdmittedMember(options, value, out _) is not { } g ||
-        !ModularTerminationAnalysis.Of(program).ReachesOpenDispatch(g, codeContext?.EnclosingModule) ||
+        !TranslationTerminationFacts(g, codeContext?.EnclosingModule).ReachesDispatch ||
         GlobalBound(g) is not { } bound) {
       return null;
     }

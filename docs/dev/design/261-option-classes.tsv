@@ -12,6 +12,7 @@ allow-warnings	miss	miss	miss	false | true
 analyze-proofs	miss	miss	miss	false | true	
 ancestor-qualified-module-ids	miss	miss	miss	false | true	
 arithmetic-solver	miss	miss	miss	1 | 2	
+batch-gc	miss	miss	miss	fixed	startup GC policy requires the command-line executable; in-process opt-in is rejected; conservatively keyed by the default-deny inventory
 bitvector-map-keys	miss	miss	miss	false | true	
 boogie	miss	miss	miss	(none) | /vcsSplitOnEveryAssert	
 bootstrapping	miss	miss	miss	false | true	
@@ -131,6 +132,7 @@ notify-ghostness	n/a	n/a	n/a	-	not an option of verify
 notify-line-verification-status	n/a	n/a	n/a	-	not an option of verify
 only-label	n/a	n/a	n/a	-	not an option of verify
 optimize-erasable-datatype-wrapper	n/a	n/a	n/a	-	not an option of verify
+optimize-translation-copy	hit	hit	hit	false | true	graph-copy implementation only: preserves aliases, generated names, solver commands and resource counts
 outer-module	n/a	n/a	n/a	-	not an option of verify
 output	n/a	n/a	n/a	-	not an option of verify
 performance-stats	miss	miss	miss	1 | 2	
@@ -197,6 +199,7 @@ track-print-effects	miss	miss	miss	false | true
 trait-rank-decreases	miss	miss	miss	false | true	
 translate-standard-library	n/a	n/a	n/a	-	not an option of verify
 translation-cache	hit	hit	hit	false | true	in-process reuse of translations, which yields the same Boogie programs
+translation-global-inputs	hit	hit	hit	false | true	freezes current global answers for a later translation identity; changes no local resolution or solver result
 ready-module-verification	hit	hit	hit	--translation-workers 2 --verification-module-window 2 --boogie /restartProver --ready-module-verification:false | --translation-workers 2 --verification-module-window 2 --boogie /restartProver --ready-module-verification:true	scheduling only: private translations and fresh solver histories keep all three stages identical
 translation-workers	hit	hit	hit	1 | 2	scheduling only: translations commit in arrival order, and one and many workers yield the same Boogie programs and solver input
 translation-workers-stress	hit	hit	hit	0 | 5	test-only delays of translation scheduling, which change no translation
@@ -232,3 +235,4 @@ worst-amount	n/a	n/a	n/a	-	not an option of verify
 boogie:/cacheUsedTypes	miss	miss	miss	(none) | /cacheUsedTypes	
 boogie:/normalizeDeclarationOrder	miss	miss	miss	(none) | /normalizeDeclarationOrder	
 boogie:/structuralLiterals	miss	miss	miss	(none) | /structuralLiterals	
+persistent-ide-reports	hit	hit	hit	false | true	controls eligibility of complete IDE reports without changing solver inputs

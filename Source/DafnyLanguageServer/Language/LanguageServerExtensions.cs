@@ -47,7 +47,8 @@ namespace Microsoft.Dafny.LanguageServer.Language {
           serviceProvider.GetRequiredService<IProgramVerifier>(),
           compilation,
           (resolution, module) => BoogieVerificationBackend.CreateRequest(engine, resolution, module) with {
-            RequiresNativeTasks = true
+            RequiresNativeTasks = true,
+            AcceptsCachedIdeReports = resolution.ResolvedProgram.Options.Get(CommonOptionBag.PersistentIdeReports)
           },
           work => BoogieVerificationBackend.ReleasePrograms(engine, work)
           ))

@@ -393,6 +393,19 @@ Various options control the verification process, in addition to all those descr
   Modular termination, counterexample extraction and unsupported graph metadata
   recompute through the default materialization path.
 
+- `--translation-global-inputs` requires `--type-system-refresh` and is off by
+  default. With `--translation-cache` or `--persistent-translation`, it allows
+  eligible translations with active modular termination to be reused. Before
+  lookup, it freezes the current dispatch, argument-only and dispatch-reachability
+  classifications for the resolved members and caller views in the module's
+  dependency closure. Both positive and negative answers enter the translation
+  identity; the translator consumes those same frozen answers. An unlisted read
+  uses the native analysis and prevents snapshot publication. External plugins,
+  generated test runners and ambiguous declaration views remain ineligible.
+  Current global admission and diagnostics still run, and
+  `--persistent-translation-audit` compares stored translations and results with
+  independently verified current output. Local resolution keys remain unchanged.
+
 - `--persistent-translation` ([#261](https://github.com/erniecohen/dafny/issues/261))
   keeps two more tables in the `--verification-cache` directory, across processes,
   and requires both `--verification-cache` and `--type-system-refresh`. The
@@ -438,7 +451,7 @@ Various options control the verification process, in addition to all those descr
   module result differs from the fresh one. It also bypasses persistent task-response
   replay and publication, leaving the stored evidence unchanged.
 
-  The language server requires native assertion and split graphs for its reports.
+  By default, the language server requires native assertion and split graphs for its reports.
   It therefore translates and prepares current native tasks even when a whole-module
   result is stored. Eligible solver responses can still be reused by the shared
   task cache; the CLI's whole-module fast path is unaffected. The CLI and language
@@ -449,6 +462,19 @@ Various options control the verification process, in addition to all those descr
   settings and all other ordered prover options remain distinct. Persistent
   results follow the current manual-selection and save-verification settings;
   a cache entry does not schedule an unrequested symbol.
+
+  With `--persistent-ide-reports` and `--persistent-translation`, the language server
+  can instead reuse a whole module with complete IDE assertion reports. These reports
+  retain current-source ranges, per-assertion outcomes, descriptions, hover details,
+  batch membership and resource counts without executable split or assertion graphs.
+  With `--persistent-counterexamples`, eligible resource-bounded failed and mixed-outcome
+  modules also retain diagnostics, counterexample models and code actions. Models restore
+  current-source state descriptions; code-action syntax is applied to the current parsed
+  source. Native runs with persistent translation record the reports for later use; the
+  option enables their IDE consumption. Incomplete or stale metadata and unsupported
+  shapes use native preparation and the task cache. Explicit reseeding also prepares
+  native tasks. Audit mode independently regenerates the reports and compares every
+  stored field except elapsed time. The option does not change which symbols are scheduled.
 
   The cache directory is named by `--verification-cache`, then by the
   `verification-cache` value of the project file, then by the `DAFNY_CACHE_DIR`
@@ -552,6 +578,17 @@ proofs and does not establish that the whole project is verified.
    - `--verification-module-window-memory`
    - `--release-verified-modules`
    - `--translation-workers`
+
+The hidden, default-off `--batch-gc` option runs `dafny verify` with background
+garbage collection disabled from process startup. This can improve throughput on
+allocation-heavy projects, at the cost of responsiveness during collections. The
+command-line executable starts a child with the same arguments and runtime,
+forwards its standard streams and exit code, and waits for it to finish. The
+parent stops its child on cancellation or process exit. The option requires the
+command-line executable; in-process verification APIs reject it. It changes no
+generated obligations or solver settings. `--pipeline-profile` records the active
+mode as `gcLatencyMode` in its manifest. It can also be set as `batch-gc = true` in
+a project's `[options]` table.
 
 By default `dafny verify` verifies one module at a time: it starts every symbol of a
 module, waits until all of them have finished, and only then translates and starts
