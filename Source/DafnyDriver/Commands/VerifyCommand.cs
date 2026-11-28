@@ -84,6 +84,7 @@ public static class VerifyCommand {
         PerformanceStatisticsOption,
         BatchGc,
         CommonOptionBag.TranslationCache,
+        CommonOptionBag.TranslationGlobalInputs,
         CommonOptionBag.OptimizeTranslationCopy,
         CommonOptionBag.PersistentTranslation,
         CommonOptionBag.PersistentTranslationAudit,

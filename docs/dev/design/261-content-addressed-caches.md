@@ -433,6 +433,13 @@ The other reviewed postpasses separate as follows:
 
 `FinalResolutionKey.FinalizeKey` in the patch frames `L` and canonical `G` bytes. It does **not** implement the global-view extraction or modify the translator's global-analysis access; those remain implementation requirements. Until they exist, the prototype is not sufficient to enable translation-cache hits under modular termination or any other unprojected global dependency.
 
+The opt-in [frozen global input implementation](261-global-inputs.md) supplies the
+modular-termination query projection and makes the three translator query sites
+consume it. It finalizes the translation's local resolution identity without
+changing the local snapshot table. Unlisted reads prevent publication; external
+plugins and generated test runners remain ineligible. This is permission for the
+covered translation route, not a general purity contract for other postpasses.
+
 ### Persistent `ModuleResolutionResult` format
 
 Use a typed, versioned graph format, never `BinaryFormatter`, reflection-deserialized CLR objects, a `.doo` printed AST or a previously mutated live result. The snapshot boundary is the return of `ResolveModuleDeclaration`, before program postpasses and translation mutate objects. Freeze/copy at publication.

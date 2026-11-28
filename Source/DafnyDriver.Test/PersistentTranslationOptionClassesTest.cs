@@ -88,6 +88,7 @@ public class PersistentTranslationOptionClassesTest(ITestOutputHelper output) {
         var coreArgs = extraArgs.Any(a => a == "--cores" || a.StartsWith("--cores:") || a.StartsWith("--cores="))
           ? Array.Empty<string>() : new[] { "--cores", "2" };
         var args = new[] { "verify", input, "--type-system-refresh", "--persistent-translation",
+          "--boogie", "/restartProver",
           "--verification-cache", Path.Combine(directory.FullName, "cache"), "--pipeline-profile", profile }
           .Concat(coreArgs).Concat(solverArgs).Concat(extraArgs).ToArray();
         var writer = new StringWriter();
@@ -118,6 +119,7 @@ public class PersistentTranslationOptionClassesTest(ITestOutputHelper output) {
       }
 
       var observedKeys = 0;
+      var observedResultKeys = 0;
       var disagreements = new StringBuilder();
       async Task<string[]?> Observe(string option, string sample) {
         var values = sample.Replace("{dir}", directory.FullName).Split(" | ");
@@ -136,6 +138,7 @@ public class PersistentTranslationOptionClassesTest(ITestOutputHelper output) {
         // stage without a key in either run (results, when the environment is not identified) is
         // checked by its digest alone.
         observedKeys++;
+        if (a.Keys["results"] != null && b.Keys["results"] != null) { observedResultKeys++; }
         var keys = Stages.Select((s, i) => a.Keys[s] == null || b.Keys[s] == null ? model[i]
           : a.Keys[s] != b.Keys[s] ? "miss" : "hit").ToArray();
         // The results key also includes the task-result cache's frozen solver options, which the
@@ -183,6 +186,8 @@ public class PersistentTranslationOptionClassesTest(ITestOutputHelper output) {
       Assert.True(failures.Length == 0, failures.ToString());
       output.WriteLine($"{observedKeys} options were checked against the keys module M is looked up under");
       Assert.True(observedKeys > 100, $"only {observedKeys} options were checked against the real keys");
+      Assert.True(observedResultKeys > 100,
+        $"only {observedResultKeys} options were checked against eligible module-results environments");
     } finally {
       directory.Delete(true);
     }

@@ -70,9 +70,9 @@ public sealed class ModuleTranslationCache {
       return "a member invariant whose verification is not yet supported";
     }
     if (module.ResolutionKey == null || module.TranslationInputs == null ||
-        // Resolution currently exposes L, not the finalized post-global G/R view.
-        // Modular termination reads downstream open-trait/dispatch facts; recompute until keyed.
-        ModularTermination.Active(options, program) || options.PrintWithUniqueASTIds ||
+        // Active global analysis requires a complete frozen projection; the local key alone is insufficient.
+        ModularTermination.Active(options, program) &&
+          (TranslationGlobalInputs.For(program, module) is not { Complete: true }) || options.PrintWithUniqueASTIds ||
         // Model extraction consumes graph/source report state not covered by the snapshot codec.
         options.ExtractCounterexample && !persistentResults ||
         options.AdditionalPlugins.Count != 0 || options.AdditionalPluginArguments.Count != 0 ||
@@ -127,8 +127,8 @@ public sealed class ModuleTranslationCache {
       string? reason = null;
       Bpl.Program? consumer = null;
       var copied = BoogieSnapshotCloner.TryClone(translated, out consumer, out reason, optimize: options.Get(CommonOptionBag.OptimizeTranslationCopy));
-      if (reporter.HasErrors || !copied) {
-        Bypasses++; LastBypassReason = reporter.HasErrors ? "translation diagnostics" : reason;
+      if (reporter.HasErrors || !copied || BypassReason(program, module, flags) is { }) {
+        Bypasses++; LastBypassReason = reporter.HasErrors ? "translation diagnostics" : reason ?? "unlisted global input";
         return new ModuleTranslation(copied ? consumer! : translated, manager);
       }
       var text = Emit(translated, options);
@@ -216,6 +216,9 @@ public sealed class ModuleTranslationCache {
       typeof(BoogieGenerator).Module.ModuleVersionId.ToString(), typeof(Bpl.Program).Module.ModuleVersionId.ToString(),
       flags.PreludeText ?? File.ReadAllText(BoogieGenerator.PreludePath(program.Options)),
       flags.InsertChecksums.ToString(), flags.ReportRanges.ToString(), flags.UniqueIdPrefix == null ? "null" : "string:" + flags.UniqueIdPrefix };
+    if (TranslationGlobalInputs.For(program, module) is { } global) {
+      parts.Add(global.FinalIdentity);
+    }
     // Source coordinates and captureState strings are observable in BPL/reporting but deliberately
     // absent from a semantic resolution key. Bind source files from this module's closure only.
     var names = module.TranslationInputs!.ModuleNames;

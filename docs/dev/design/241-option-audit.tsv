@@ -194,6 +194,7 @@ cli	test-assumptions	--test-assumptions	System.CommandLine.Option`1[Microsoft.Da
 cli	track-print-effects	--track-print-effects	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	trait-rank-decreases	--trait-rank-decreases	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	translate-standard-library	--translate-standard-library	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	translation-global-inputs	--translation-global-inputs	System.CommandLine.Option`1[System.Boolean]	input	freezes current global classifications and binds them to translation identities before task lookup; preserves native obligations and solver input
 cli	translation-record	--translation-record	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.IO.FileInfo]]	command-setup	setup or another command; executes before/outside proof transport
 cli	translation-record-output	--translation-record-output	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
 cli	ready-module-verification	--ready-module-verification	System.CommandLine.Option`1[System.Boolean]	execution	module readiness changes scheduling only; fresh solver per proof, identical translation and assertion maps
