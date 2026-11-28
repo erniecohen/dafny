@@ -40,7 +40,7 @@ def inspect_python(output, kind, text):
         assert calls.count('Count') == 1
 
 
-def main(target='py', inspect=None, program=None):
+def main(target='py', inspect=None, program=None, target_options=(), verification_command=('verify',)):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dafny', required=True, type=Path)
     parser.add_argument('--z3', required=True, type=Path)
@@ -70,14 +70,14 @@ def main(target='py', inspect=None, program=None):
                   '--type-system-refresh:' + str(mode == 'refreshed').lower(),
                   '--additional-axioms:' + str(args.additional_axioms).lower(),
                   '--resource-limit', '200000', '--verification-time-limit', '60',
-                  '--boogie', '/normalizeDeclarationOrder:0', '--boogie', '/restartProver']
+                  '--boogie', '/normalizeDeclarationOrder:0', '--boogie', '/restartProver', *target_options]
 
         def verify(label, lines, negative=False):
             name = mode + '-' + label
             path = out / (name + '.dfy')
             path.write_text('\n'.join(lines) + '\n')
             csvpath = out / (name + '.csv')
-            text = run(name, ['verify', str(path), *common, '--log-format', 'csv;LogFileName=' + str(csvpath)], 4 if negative else 0)
+            text = run(name, [*verification_command, str(path), *common, '--log-format', 'csv;LogFileName=' + str(csvpath)], 4 if negative else 0)
             expected = {i for i, line in enumerate(lines, 1) if '// ERROR' in line}
             actual = {int(i) for i in re.findall(r'\((\d+),\d+\): Error:', text)}
             assert actual == expected, (name, actual, expected)

@@ -2951,17 +2951,21 @@ and what information it produces about the verification process.
   `0 <= value < 2^N`; every result must satisfy the entire newtype predicate.
   Binary operands have the same newtype, and shift counts satisfy `0 <= k <= N`.
   Disabled by default. These six operators compile to C# using native integer
-  operators for native newtypes and BigInteger otherwise, and to Go, Java, JavaScript and Python using
+  operators for native newtypes and BigInteger otherwise, and to Go, Java, JavaScript, Python and Rust using
   semantic-width integer operators. Go uses unsigned native intermediates or its
   arbitrary-precision Int runtime. Java uses unsigned long intermediates or
   BigInteger; Python uses arbitrary-precision integers. JavaScript uses exact BigInt
-  intermediates and returns safe native Numbers or arbitrary-precision BigNumbers. Other targets reject
-  compiled uses, except for the bounded C++ support described below. The members `x.RotateLeft(k)` and `x.RotateRight(k)` return the
+  intermediates and returns safe native Numbers or arbitrary-precision BigNumbers.
+  Rust uses arbitrary-precision BigInt intermediates and requires
+  `--enforce-determinism`, like its other compiled programs. Its default runtime
+  supports all positive semantic widths, including unsigned 128-bit native storage;
+  the optional `small-int` runtime retains its existing signed 128-bit value limit.
+  C++ has the bounded support described below. The members `x.RotateLeft(k)` and `x.RotateRight(k)` return the
   same newtype after checking its entire predicate; their integer count must
   satisfy `0 <= k <= N`. Both endpoints return x. The query `x.bit(i)` returns
   bool, requires an integer index `0 <= i < N`, and does not require any
   intermediate value to satisfy the newtype predicate. These members compile
-  to C#, Go, Java, JavaScript and Python at the declared semantic width, including when native storage is
+  to C#, Go, Java, JavaScript, Python and Rust at the declared semantic width, including when native storage is
   narrower. They are direct calls, not first-class function values. Their names
   are reserved on enabled width declarations; collisions with user members are
   errors. Opaque exports expose no such members. `x.PopCount()` takes no
@@ -2969,7 +2973,7 @@ and what information it produces about the verification process.
   native popcount intrinsic or counts 64-bit chunks of a BigInteger. Python
   counts the set binary digits without narrowing, including on Python 3.8. Java
   uses Long.bitCount or BigInteger.bitCount and returns an arbitrary-precision natural.
-  Go and JavaScript repeatedly clear the lowest set digit and return an arbitrary-precision natural. Include
+  Go, JavaScript and Rust repeatedly clear the lowest set digit and return an arbitrary-precision natural. Include
   the optional `IntegerBitwisePopulation.dfy` and call its checked `View(N,x as int)`
   lemma to establish the ordinary natural-result conversion and the upper bound
   N; its `AllOnes(N)` lemma proves the all-ones case. No range fact is assumed. Include

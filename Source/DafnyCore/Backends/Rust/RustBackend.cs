@@ -61,6 +61,59 @@ public class RustBackend : DafnyExecutableBackend {
       bool preventShadowing, bool canEmitUncompilableCode)
       : base(options, reporter, fieldPrefix, preventShadowing, canEmitUncompilableCode) { }
 
+    private SubsetTypeDecl integerBitwiseNat;
+
+    protected override void EmitHeader(Program program, ConcreteSyntaxTree wr) {
+      integerBitwiseNat = program.SystemModuleManager.NatDecl;
+      base.EmitHeader(program, wr);
+    }
+
+    protected override DAST.Type GenType(Type type) {
+      // The builtin nat is an integer at runtime. In particular, a newtype's
+      // generated constraint check must not retain an unavailable _System alias.
+      // Restrict this normalization to the opt-in interface and builtin identity.
+      if (Options.Get(CommonOptionBag.IntegerBitwise) &&
+          type.NormalizeExpandKeepConstraints() is UserDefinedType { ResolvedClass: var declaration } &&
+          declaration == integerBitwiseNat) {
+        return base.GenType(Type.Int);
+      }
+      return base.GenType(type);
+    }
+
+    protected override void EmitIntegerBitwise(ConversionExpr expression, bool inLetExprBody,
+      ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
+      var name = ((FunctionCallExpr)expression.E.Resolved).Function.Name;
+      if (name is not ("andNat" or "orNat" or "xorNat" or "notNat" or "shlNat" or
+          "shrNat" or "rolNat" or "rorNat" or "popNat")) {
+        throw new InvalidOperationException("unexpected integer bitwise reference");
+      }
+      // Widen native operands before entering the runtime and narrow only the
+      // final result. Each source operand occurs once, in source order, among
+      // Rust's left-to-right call arguments. The runtime borrows those values.
+      wr = EmitCoercionIfNecessary(Type.Int, expression.Type, expression.Origin, wr);
+      if (!GetExprConverter(wr, wStmts, out var builder, out var convert)) {
+        throw new InvalidOperationException();
+      }
+      var args = new List<DAST._IExpression> {
+        convert(Expression.CreateIntLiteral(expression.Origin, expression.IntegerBitwiseWidth.Value))
+      };
+      foreach (var operand in expression.IntegerBitwiseOperands) {
+        args.Add(DAST.Expression.create_Convert(convert(operand),
+          GenType(GetRuntimeType(operand.Type)), GenType(Type.Int)));
+      }
+      var path = global::Dafny.Sequence<global::Dafny.ISequence<global::Dafny.Rune>>.FromElements(
+        global::Dafny.Sequence<global::Dafny.Rune>.UnicodeFromString("::dafny_runtime"),
+        global::Dafny.Sequence<global::Dafny.Rune>.UnicodeFromString("integer_bitwise"));
+      var signature = DAST.CallSignature.create_CallSignature(
+        global::Dafny.Sequence<DAST._IFormal>.Empty, global::Dafny.Sequence<DAST._IFormal>.Empty);
+      var call = DAST.CallName.create_CallName(global::Dafny.Sequence<global::Dafny.Rune>.UnicodeFromString(name),
+        Std.Wrappers.Option<DAST.Type>.create_None(),
+        Std.Wrappers.Option<DAST._IFormal>.create_None(), false, signature);
+      builder.Builder.AddExpr((DAST.Expression)DAST.Expression.create_Call(
+        DAST.Expression.create_ExternCompanion(path), call,
+        global::Dafny.Sequence<DAST._IType>.Empty, global::Dafny.Sequence<DAST._IExpression>.FromArray(args.ToArray())));
+    }
+
     protected override bool UseExternalConstructorArguments(Constructor constructor) =>
       // A constructor body runs after allocation and receives its arguments then.
       // Only a bodiless foreign constructor passes arguments to the allocation hook.
