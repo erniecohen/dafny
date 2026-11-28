@@ -1,0 +1,6 @@
+With the hidden experimental `--recursive-modules` option, JavaScript concrete
+refinements of recursive module groups can load their foreign module objects from
+CommonJS libraries, including through abstract refinements. Generated members extend
+the exported object while native constructors and imported trait identities retain
+their original ownership. Require-based imported ancestor owners outside recursive
+groups remain unsupported.

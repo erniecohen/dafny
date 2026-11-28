@@ -305,10 +305,14 @@ extern type or, for module-level members, an extern module. Two-argument member
 qualifiers are supported only for functions and static methods; instance methods
 and fields retain receiver-based linkage. Concrete refinements of group members
 may contain fully imported or partial extern classes, including through abstract
-refinements. Each concrete refinement must name its own preloaded extern module
-object; inherited classes use that object's public type names. Require-based refinements
-and require-based imported ancestor modules remain rejected until their loading
-and identity behavior is qualified. Fully imported
+refinements. Each concrete refinement must name its own preloaded or require-based
+extern module object; inherited classes use that object's public type names. A
+require-based refinement loads its library once, then extends that exact exports
+object with inherited and generated declarations, preserving native class and
+trait identities. Concrete descendants of abstract refinements use their own
+required namespace; the abstract intermediate emits nothing. Require-based
+imported ancestor modules outside recursive groups remain rejected until their
+loading and identity behavior is qualified. Fully imported
 classes emit no
 generated class layout. Partial classes use the ordinary JavaScript lowering: a
 generated subclass extends the concrete module's foreign class, forwards its type
@@ -363,12 +367,27 @@ to populate it breaks execution. The test also checks that each required object
 is bound once outside the group closure. Dotted, empty and punctuated required
 module names, unescaped keywords and runtime binding collisions are rejected.
 Generic native constructors in required group members check descriptor-backed
-defaults and ghost erasure against C#. Require-based direct refinements, concrete
-descendants of abstract refinements and partial native constructors retain explicit
-negative controls. Incorrect-result and inhabited false
+defaults and ghost erasure against C#. Partial native constructors retain explicit
+negative controls. Require-based refinements are qualified separately below.
+Incorrect-result and inhabited false
 assertions fail with additional axioms off and on. The existing certificate
 restriction for arbitrary extern contracts remains a negative control. Ordinary
 acyclic require-based and preloaded extern tests provide option-off comparisons.
+`git-issue-466-js-require-refinements.dfy` checks direct concrete refinements and
+concrete descendants of abstract refinements against independent C# compilation.
+It repeats the full runtime matrix with native generic constructors, partial
+classes and imported ordinary, generic and diamond-shaped trait hierarchies.
+Both wrapper-erasure modes, scheduled resolution with additional axioms,
+relocated complete archives and separately translated producers and clients are
+covered. Real CommonJS loaders retain each exported owner and native trait
+identities; native callbacks call generated recursive functions through those
+captured owners, so extending a copy fails at runtime. Incorrect results and
+reachable false assertions after native calls, construction, generated field
+initialization and trait dispatch fail with additional axioms off and on.
+Malformed required names, partial native constructors, foreign-contract
+certificates and require-based acyclic ancestor owners remain rejected.
+Only the refinement-owner admission check changes; no verifier rule, obligation,
+axiom or assumption changes. Ordinary emission with the option off is unchanged.
 `git-issue-466-js-constructors.dfy` repeats that runtime matrix with generic native
 constructors, ghost parameters, descriptor-backed defaults and observable argument
 order. Source builds, both wrapper-erasure settings, archives rebuilt from relocated
@@ -431,12 +450,23 @@ group and groups without extern declarations use their existing emission paths.
 
 ## Remaining compilation work
 
-Qualify the other backends one at a time. Each needs runtime comparisons for
-three-member function recursion, constants whose dependencies follow no module
-order, mutually recursive datatypes, defaults and witnesses, traits, refinement
-and library inputs. Targets that forbid cyclic imports need group emission as
-one target-language unit. No backend is admitted merely because its generated
-source parses or compiles.
+The six admitted targets have runtime comparisons for three-member function
+recursion, constants whose dependencies follow no module order, mutually recursive
+datatypes, defaults and witnesses, traits, refinement and library inputs. C++ and
+resolved Dafny remain unqualified for the reasons below. Further foreign-linkage
+qualification must preserve the same matrix; parsing or native compilation alone
+does not establish support.
+
+The remaining group-specific or foreign-interface boundaries include:
+
+| Target | Remaining boundary |
+| --- | --- |
+| Go | Import cycles with a foreign package and generated methods on a type owned by another package. |
+| Python | Package translation of wholly omitted groups and dotted extern package names; foreign initialization must defer callbacks into generated siblings. |
+| JavaScript | Require-based acyclic imported ancestor owners; native constructors on partial classes; imported traits requiring generated members or generated ancestors; qualified type owners and qualified instance members. |
+| Rust | Compiled fields on refined foreign classes, two-argument type/module externs and mixed generated/foreign implementations of a trait; ordinary trait and implicit-default restrictions remain. |
+| C++ | Group-wide datatype indirection and the missing matrix features described below. |
+| Resolved Dafny | An implemented printer and executable round trip. |
 
 The Python milestone depends on https://github.com/erniecohen/dafny/pull/535,
 through it https://github.com/erniecohen/dafny/pull/533, and through that

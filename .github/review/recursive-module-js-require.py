@@ -124,12 +124,8 @@ method Main() { print Native.Same(4, 4), "\\n"; }
         'class {:extern} RequiredCell<T(0)> { function Generated(): int { 0 }'))
     rejected = run("partial-constructor", "translate", [partial], ["--no-verify"], 3)
     assert "partial classes must use a Dafny constructor body" in rejected
-    # Keep refinements and imported ancestor owners behind their existing boundary.
-    for label, declaration in [("refinement", 'module {:extern "RequiredRefined", "./issue466_required.js"} RequiredRefined refines B { }'),
-                               ("abstract-refinement", 'abstract module AbstractForeign refines B { }\nmodule {:extern "RequiredFinal", "./issue466_required.js"} RequiredFinal refines AbstractForeign { }')]:
-        unsupported = write(label + ".dfy", library.replace("class Implementation extends A.Counter", "class Implementation") + "\n" + declaration + "\n")
-        rejected = run(label, "translate", [unsupported], ["--no-verify"], 3)
-        assert "preloaded extern module objects for refinements" in rejected
+    # Refinement owners have their own runtime qualification matrix. Keep name
+    # validation here as well: the group filter must include concrete descendants.
     # The broader filter must also validate require names in refining namespaces.
     invalid_refinement = write("invalid-refinement.dfy", library.replace("class Implementation extends A.Counter", "class Implementation") + '\nmodule {:extern "bad-name", "./issue466_required.js"} RequiredRefined refines B { }\n')
     rejected = run("invalid-refinement", "translate", [invalid_refinement], ["--no-verify"], 3)
