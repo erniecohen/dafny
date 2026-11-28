@@ -116,7 +116,9 @@ internal sealed class IntegerBitwiseOperations(ModuleResolver resolver) : ASTVis
     var call = Expression.CreateResolvedCall(syntax.Origin,
       new StaticReceiverExpr(syntax.Origin, receiverType, false) { Type = receiverType },
       references.References[name], arguments, [], builtins);
-    Expression result = new ConversionExpr(syntax.Origin, call, syntax.Type) { Type = syntax.Type };
+    Expression result = new ConversionExpr(syntax.Origin, call, syntax.Type) {
+      Type = syntax.Type, IntegerBitwiseWidth = width.Value
+    };
     if (isShift) {
       var count = arguments[2];
       var lower = new BinaryExpr(syntax.Origin, BinaryExpr.Opcode.Le,

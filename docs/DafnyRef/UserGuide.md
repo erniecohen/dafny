@@ -2945,13 +2945,14 @@ and what information it produces about the verification process.
 * `--integer-bitwise` - enable the compiler-owned ghost class
   `IntegerBitwiseModel` and its explicit one-step definition-unfold lemmas for
   powers, normalization, Boolean operations, shifts, rotations and population
-  count. It also enables `&`, `|`, `^`, `!`, `<<` and `>>` in ghost code on
+  count. It also enables `&`, `|`, `^`, `!`, `<<` and `>>` on
   revealed integer newtypes annotated with `{:bitWidth N}`. The positive literal
   width is independent of native storage. Recognizable bounds must establish
   `0 <= value < 2^N`; every result must satisfy the entire newtype predicate.
   Binary operands have the same newtype, and shift counts satisfy `0 <= k <= N`.
-  Disabled by default. Runtime operators, rotations, population-count syntax and
-  the remaining native arithmetic/order/rotation bridges remain later work. Include
+  Disabled by default. These six operators compile to C# using native integer
+  operators for native newtypes and BigInteger otherwise. Other targets reject
+  compiled uses. Rotation and population-count syntax remain later work. Include
   the optional `IntegerBitwiseCompiler.dfy` companion for checked range and algebra
   contracts. `IntegerBitwiseNative.dfy` provides checked native conversion and
   Boolean bridges at widths 8, 16, 32 and 64, independently of additional axioms.

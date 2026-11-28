@@ -1,0 +1,4 @@
+`--integer-bitwise` now compiles the existing bounded-integer Boolean and shift
+operators to C#, using native operators for native newtypes and BigInteger
+operators otherwise. Semantic widths and zero/full-width shift counts retain
+their verified meanings. Other compilation targets report an explicit diagnostic.
