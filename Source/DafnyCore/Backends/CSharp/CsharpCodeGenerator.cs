@@ -35,7 +35,9 @@ namespace Microsoft.Dafny.Compilers {
       var width = expression.IntegerBitwiseWidth.Value;
       var name = ((FunctionCallExpr)expression.E.Resolved).Function.Name;
       var operands = expression.IntegerBitwiseOperands.ToList();
-      var native = expression.Type.AsNativeType() != null;
+      var rotation = name is "rolNat" or "rorNat";
+      // Rotation uses semantic width, including when the carrier is narrower.
+      var native = operands[0].Type.AsNativeType() != null && (!rotation || width <= 64);
       var typeName = TypeName(expression.Type, wr, expression.Origin);
       var shift = name is "shlNat" or "shrNat";
       var binding = ProtectedFreshId("_integerBitwise");
@@ -53,7 +55,7 @@ namespace Microsoft.Dafny.Compilers {
       }
       if (operands.Count == 2) { wr.Write(")"); }
       wr.Write($", static {binding} => ");
-      var x = native ? $"((ulong){variables[0]})" : variables[0];
+      var x = native ? $"((ulong){variables[0]})" : $"((BigInteger){variables[0]})";
       var mask = native ? $"{(width >= 64 ? ulong.MaxValue : (1UL << width) - 1)}UL"
         : $"((BigInteger.One << {width}) - BigInteger.One)";
       var y = operands.Count == 2 && native && !shift ? $"((ulong){variables[1]})" : variables.Last();
@@ -64,10 +66,14 @@ namespace Microsoft.Dafny.Compilers {
         "notNat" => $"(~{x}) & {mask}",
         "shlNat" => $"({x} << (int){variables[1]}) & {mask}",
         "shrNat" => $"{x} >> (int){variables[1]}",
+        "rolNat" => $"(({x} << (int){variables[1]}) & {mask}) | ({x} >> ({width} - (int){variables[1]}))",
+        "rorNat" => $"({x} >> (int){variables[1]}) | (({x} << ({width} - (int){variables[1]})) & {mask})",
         _ => throw new InvalidOperationException("unexpected integer bitwise reference")
       };
       wr.Write($"unchecked(({typeName})(");
       // A C# integral shift masks its count; a semantic full-width shift is zero.
+      // Endpoints are identities; guard them before the host masks a shift by 64.
+      if (rotation) { wr.Write($"{variables[1]} == 0 || {variables[1]} == {width} ? {x} : "); }
       if (shift) { wr.Write($"{variables[1]} >= {Math.Min(width, native ? 64 : int.MaxValue)} ? 0 : "); }
       wr.Write(operation);
       wr.Write("))");

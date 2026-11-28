@@ -378,7 +378,8 @@ digits, and the two shifts move their indices with zero fill.
 
 Other targets report an explicit unsupported-feature diagnostic. The fixed
 reference interface remains ghost-only. Other target implementations, native
-rotation bridges and rotation/bit/population-count source surface remain open.
+rotation bridges and rotation/bit/population-count source surface were separate work.
+The rotation and bit-query source extension is described below.
 
 `issue193-runtime-csharp.py` checks complete generated programs (including the
 runtime drivers), symbolic reference contracts, both resolvers and axiom modes,
@@ -389,3 +390,45 @@ widths 4/5/8/12/16/31/32/63/64 and nonnative 80/128-bit cases cover masks, signs
 counts, ghost operands and unsupported targets are rejected. Generated-code
 inspection, clone/substitution unit tests, serial mutations and paired
 option-off/code/verdict/resource comparisons qualify the compilation boundary.
+
+
+## Rotation and bit-query source members
+
+The M6a source surface stacks on https://github.com/erniecohen/dafny/pull/621.
+With `--integer-bitwise`, a revealed descriptor `newtype {:bitWidth N} T`
+supports `x.RotateLeft(k)`, `x.RotateRight(k)` and `x.bit(i)`. Both resolvers
+elaborate actual member calls; method values and opaque descriptors do not gain
+this capability. These names are reserved on enabled width declarations, so a
+user member cannot silently take the compiler-owned meaning. Count arguments
+have type int (named `k` for rotations and `i` for bit queries).
+
+**Definitional argument.** A rotation is exactly the existing compiler-owned
+`rolNat(N,x as int,k)` or `rorNat(N,x as int,k)`, followed by the ordinary checked
+conversion to T. The ordinary assertion checks `0 <= k <= N`. A bit query checks
+`0 <= i < N` and returns `shrNat(N,x as int,i) % 2 == 1`; it never converts the
+intermediate shift result to T. Thus its proof meaning is the unsigned reference
+bit at i. Rotation endpoints zero and N are identities by the existing model.
+Nested source calls retain each full result-predicate obligation. No axioms,
+closure contracts, native-BV conversions or compiler identities are added.
+Existing foundation agreement lemmas connect these expressions to the checked
+integer model, independently of `--additional-axioms` and of native bridge PRs
+https://github.com/erniecohen/dafny/pull/610,
+https://github.com/erniecohen/dafny/pull/615 and
+https://github.com/erniecohen/dafny/pull/622.
+
+C# evaluates receiver and count once, in source order. Rotations use semantic N,
+with guarded endpoints before any host shift masking. A native carrier is used
+only when it can hold the N-bit intermediates; wider semantic widths use
+BigInteger intermediates and cast only the final result. In particular a
+12-bit semantic word stored in a byte rotates 16 left by eight to 1. Bit queries
+use the existing guarded right shift followed by parity. Unsupported compilation
+targets retain the explicit diagnostic from the C# runtime milestone.
+
+`issue193-rotation-bit-source.py` checks symbolic reference contracts, legal
+endpoints, exact runtime-case identities and an independent quotient/remainder
+oracle, including non-power-of-two and nonnative widths. Invalid counts/indices,
+wrong results, live false controls, stricter result predicates, ghost arguments,
+malformed calls and member collisions must fail conclusively. Paired ordinary
+and ghost definitions, resolution-cache checks, clone/substitution coverage,
+serial mutations and baseline Boogie/verdict/resource comparisons qualify the
+elaboration boundary. Population-count source support is the following M6b item.

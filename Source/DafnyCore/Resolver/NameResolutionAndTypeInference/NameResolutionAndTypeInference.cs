@@ -5825,6 +5825,20 @@ namespace Microsoft.Dafny {
           // "c.requires" and "c.reads", for a value "c" of a bounded type, are those of "c.erase" (issue 266)
           expr.Lhs = erased;
         }
+        if (args != null && IntegerBitwiseOperations.IsSourceMember(name) && IntegerBitwiseOperations.Enabled(this, expr.Origin) &&
+            IntegerBitwiseOperations.DeclaredWidth(PartiallyResolveTypeForMemberSelection(expr.Origin, expr.Lhs.Type)) != null) {
+          foreach (var binding in args) {
+            ResolveExpression(binding.Actual, resolutionContext);
+            AddAssignableConstraint(binding.Actual.Origin, Type.Int, binding.Actual.Type,
+              "integer bitwise count or index must have type int (got {1})");
+          }
+          var result = IntegerBitwiseOperations.ElaborateMember(this, expr,
+            PartiallyResolveTypeForMemberSelection(expr.Origin, expr.Lhs.Type), args);
+          ResolveExpression(result, resolutionContext);
+          expr.ResolvedExpression = result;
+          expr.Type = result.Type;
+          return result;
+        }
         member = ResolveMember(expr.Origin, expr.Lhs.Type, name, out var tentativeReceiverType);
         if (member != null) {
           Expression receiver;
@@ -5983,6 +5997,9 @@ namespace Microsoft.Dafny {
       if (e.Lhs.Type == null) {
         // some error had been detected during the attempted resolution of e.Lhs
         e.Lhs.Type = new InferredTypeProxy();
+      }
+      if (r is StmtExpr && e.AtTok != null && e.Lhs is ExprDotName dot && IntegerBitwiseOperations.IsSourceMember(dot.SuffixName)) {
+        reporter.Error(MessageSource.Resolver, e.AtTok, "an @-label cannot be applied to an integer bitwise member");
       }
       Label atLabel = null;
       if (e.AtTok != null) {

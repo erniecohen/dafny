@@ -7,7 +7,7 @@ using System.Numerics;
 namespace Microsoft.Dafny;
 
 /// <summary>
-/// Frontend-only milestone for bounded integer operations. The ordinary call,
+/// Elaboration for bounded integer operations and source members. The ordinary call,
 /// assertion and conversion machinery owns all permission, count and membership
 /// obligations. No range theorem or defining equality is installed here.
 /// </summary>
@@ -15,7 +15,7 @@ internal sealed class IntegerBitwiseOperations(ModuleResolver resolver) : ASTVis
   public override IASTVisitorContext GetContext(IASTVisitorContext context, bool inFunctionPostcondition) => context;
 
   // Used provisionally during inference. Validation below runs on resolved bounds,
-  // independently of backend native-type selection, before any semantic lowering.
+  // independently of backend native-type selection, before verification or compilation.
   internal static int? DeclaredWidth(TopLevelDecl declaration) {
     if (declaration is not NewtypeDecl newtype || !newtype.IsRevealedInScope(Type.GetScope())) {
       return null;
@@ -40,11 +40,63 @@ internal sealed class IntegerBitwiseOperations(ModuleResolver resolver) : ASTVis
     base.VisitOneDeclaration(declaration);
   }
 
+  internal static bool IsSourceMember(string name) => name is "RotateLeft" or "RotateRight" or "bit";
+
+  internal static Expression ElaborateMember(ModuleResolver resolver, ExprDotName syntax, Type receiverType,
+    System.Collections.Generic.List<ActualBinding> bindings) {
+    var origin = syntax.Origin;
+    var declaration = (NewtypeDecl)((UserDefinedType)receiverType.NormalizeExpand()).ResolvedClass;
+    var width = DeclaredWidth(declaration).Value;
+    var bit = syntax.SuffixName == "bit";
+    var parameter = bit ? "i" : "k";
+    if (!Enabled(resolver, declaration.Origin) || !Enabled(resolver, origin)) {
+      resolver.Reporter.Error(MessageSource.Resolver, syntax,
+        "integer bitwise members require --integer-bitwise in both the use and the width declaration");
+    }
+    if (bindings.Count != 1 || bindings.Any(binding => binding.IsGhost ||
+        binding.FormalParameterName != null && binding.FormalParameterName.val != parameter) ||
+        syntax.OptTypeArguments is { Count: > 0 }) {
+      resolver.Reporter.Error(MessageSource.Resolver, syntax,
+        $"integer bitwise member '{syntax.SuffixName}' expects one integer argument '{parameter}' and no type arguments");
+      return Expression.CreateBoolLiteral(origin, false);
+    }
+    Expression Number(int value) => new LiteralExpr(origin, value);
+    Expression Integer(Expression value) => new ConversionExpr(origin, value, Type.Int);
+    var count = bindings[0].Actual;
+    var references = resolver.SystemModuleManager.SystemModule.TopLevelDecls.OfType<IntegerBitwiseReferences>().Single();
+    var receiver = new StaticReceiverExpr(origin, new UserDefinedType(origin, references.Name, references, []), false);
+    var name = bit ? "shrNat" : syntax.SuffixName == "RotateLeft" ? "rolNat" : "rorNat";
+    var call = new ApplySuffix(origin, null,
+      new ExprDotName(origin, receiver, new Name(origin, name), null),
+      new System.Collections.Generic.List<ActualBinding> {
+        new(null, Number(width)), new(null, Integer(syntax.Lhs)), new(null, Integer(count))
+      }, null);
+    // Compilation consumes exactly the source operands. Verification sees the
+    // fixed integer reference, followed by the complete nominal result predicate.
+    Expression result = new ConversionExpr(origin, call, bit ? Type.Int : receiverType) {
+      IntegerBitwiseWidth = width
+    };
+    if (bit) {
+      result = new BinaryExpr(origin, BinaryExpr.Opcode.Eq,
+        new BinaryExpr(origin, BinaryExpr.Opcode.Mod, result, Number(2)), Number(1));
+    }
+    var lower = new BinaryExpr(origin, BinaryExpr.Opcode.Le, Number(0), count);
+    var upper = new BinaryExpr(origin, bit ? BinaryExpr.Opcode.Lt : BinaryExpr.Opcode.Le, count, Number(width));
+    return new StmtExpr(origin, new AssertStmt(origin,
+      new BinaryExpr(origin, BinaryExpr.Opcode.And, lower, upper), null, null) { IsGhost = true }, result);
+  }
+
   private bool Validate(NewtypeDecl newtype) {
     var width = DeclaredWidth(newtype);
     if (width == null) {
       resolver.Reporter.Error(MessageSource.Resolver, newtype,
         ":bitWidth requires one positive integer literal no greater than 2147483647");
+      return false;
+    }
+    if (newtype.Members.Any(member => IsSourceMember(member.Name)) ||
+        resolver.GetClassMembers(newtype)?.Keys.Any(IsSourceMember) == true) {
+      resolver.Reporter.Error(MessageSource.Resolver, newtype,
+        ":bitWidth member names RotateLeft, RotateRight and bit are reserved by --integer-bitwise");
       return false;
     }
     if (newtype.BaseType.NormalizeToAncestorType() is not IntType ||

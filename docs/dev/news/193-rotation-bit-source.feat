@@ -1,0 +1,1 @@
+With --integer-bitwise, revealed integer newtypes with a bitWidth annotation support checked RotateLeft, RotateRight and bit members, including C# execution at their semantic width.
