@@ -4,7 +4,7 @@
 `IntegerBitwiseModel` and its explicit one-step unfold lemmas. It also enables the six basic bitwise operators on
 explicitly width-qualified integer newtypes. The optional native companion below
 provides checked conversion and Boolean bridges. The six source operators
-compile to C#, Java and Python; runtime support for other targets remains later work. The independent
+compile to C#, Go, Java and Python; runtime support for other targets remains later work. The independent
 `--additional-axioms` option does not expose this public interface.
 
 Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseCompiler.dfy` for
@@ -180,7 +180,7 @@ declarations. Off-built files cannot acquire the surface or width capability
 from an enabled client, including in the merged default module. No source name
 or attribute can replace the compiler-owned target. The reference call remains
 the verifier meaning in compiled contexts as well.
-C#, Java and Python compilation of these six operators is described below; other targets reject
+C#, Go, Java and Python compilation of these six operators is described below; other targets reject
 compiled uses explicitly.
 
 `issue193-newtype-operators.py` verifies actual source clients against M1 at widths
@@ -376,7 +376,7 @@ inferred from the carrier. These rules refine the weighted-digit reference:
 masking is remainder modulo a power of two, complement flips exactly those
 digits, and the two shifts move their indices with zero fill.
 
-Java and Python compilation are described below. Other targets report an explicit
+Go, Java and Python compilation are described below. Other targets report an explicit
 unsupported-feature diagnostic. The fixed
 reference interface remains ghost-only. Other target implementations, native
 rotation bridges and rotation/bit/population-count source surface were separate work.
@@ -559,3 +559,40 @@ observation from sign extension. The same negative and live-false controls,
 parent Boogie/verdict/resource comparisons, cache checks, and serial backend
 mutations qualify the boundary. The original Python entry point retains its
 existing CLI, programs, oracle checks and Python 3.8 syntax inspection.
+
+
+## Go runtime lowering for integer newtypes
+
+This opt-in milestone stacks on https://github.com/erniecohen/dafny/pull/626.
+Go compiles the same Boolean, shift, rotation, bit-query and population-count
+surface. The checked compiler references remain the verifier meaning; no axiom,
+assumption, count obligation or complete result predicate changes.
+
+The existing beta-redex emitter binds arguments once, left to right, outside
+the function body. Native carriers at semantic widths up to 64 use uint64
+intermediates. Masking after complement and left shift retains the N low
+digits. Go shifts never mask their counts: a shift by the full carrier width
+yields zero. Thus full-width source shifts and both rotation endpoints have
+their checked meanings without a host-count adjustment. Rotation parts occupy
+disjoint digit positions. Truncation modulo 2^64 commutes with the N-bit mask
+for N at most 64, as in the C# native argument.
+
+Nonnative words and wider semantic widths use the existing immutable Int
+runtime operations with an N-bit mask. Native inputs enter that path as
+unsigned mathematical observations, including a 64-bit carrier at width 80.
+Only a final result proved to satisfy its complete native predicate is narrowed
+back to that carrier. Bit queries reuse right shift and parity elaboration.
+Population count repeatedly replaces a nonzero nonnegative value x with
+x AND (x-1), removing exactly its least set digit. The count starts at zero,
+increases by one per removed digit and ends at the weighted-digit reference
+cardinality. Native counts are at most 64; nonnative counts use Int throughout.
+No runtime helper or target version requirement changes.
+
+`issue193-runtime-go.py` reuses the shared checked program generators and
+independent arithmetic-digit oracles, including the Java milestone's wide
+unsigned carrier and interior native/wide count controls. It checks exact case
+identities, both resolvers and axiom modes, strict predicates, native high bits,
+wide masks, endpoint counts and single argument evaluation. Generated Go is
+also inspected for single evaluation outside the function body. Live-false and
+wrong-result controls, serial backend mutations, paired parent proof/resource
+comparisons and fresh/cold/warm/audit equality checks qualify this boundary.
