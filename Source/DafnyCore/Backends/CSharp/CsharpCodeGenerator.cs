@@ -55,6 +55,21 @@ namespace Microsoft.Dafny.Compilers {
       }
       if (operands.Count == 2) { wr.Write(")"); }
       wr.Write($", static {binding} => ");
+      if (name == "popNat") {
+        if (native) {
+          wr.Write($"new BigInteger(System.Numerics.BitOperations.PopCount((ulong){variables[0]})))");
+        } else {
+          // Nonnegative source values need no sign normalization. Count disjoint
+          // 64-bit chunks without allocating a byte array or truncating high bits.
+          var bits = ProtectedFreshId("_integerBitwiseBits");
+          var count = ProtectedFreshId("_integerBitwiseCount");
+          wr.Write($"{{ var {bits} = (BigInteger){variables[0]}; var {count} = BigInteger.Zero; " +
+            $"while ({bits} > BigInteger.Zero) {{ " +
+            $"{count} += System.Numerics.BitOperations.PopCount((ulong)({bits} & ulong.MaxValue)); " +
+            $"{bits} >>= 64; }} return {count}; }})");
+        }
+        return;
+      }
       var x = native ? $"((ulong){variables[0]})" : $"((BigInteger){variables[0]})";
       var mask = native ? $"{(width >= 64 ? ulong.MaxValue : (1UL << width) - 1)}UL"
         : $"((BigInteger.One << {width}) - BigInteger.One)";

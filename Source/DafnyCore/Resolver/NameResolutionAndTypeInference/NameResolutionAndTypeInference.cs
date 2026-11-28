@@ -5998,7 +5998,8 @@ namespace Microsoft.Dafny {
         // some error had been detected during the attempted resolution of e.Lhs
         e.Lhs.Type = new InferredTypeProxy();
       }
-      if (r is StmtExpr && e.AtTok != null && e.Lhs is ExprDotName dot && IntegerBitwiseOperations.IsSourceMember(dot.SuffixName)) {
+      if ((r is StmtExpr or ConversionExpr { IntegerBitwiseWidth: not null }) && e.AtTok != null &&
+          e.Lhs is ExprDotName dot && IntegerBitwiseOperations.IsSourceMember(dot.SuffixName)) {
         reporter.Error(MessageSource.Resolver, e.AtTok, "an @-label cannot be applied to an integer bitwise member");
       }
       Label atLabel = null;

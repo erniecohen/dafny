@@ -40,7 +40,7 @@ internal sealed class IntegerBitwiseOperations(ModuleResolver resolver) : ASTVis
     base.VisitOneDeclaration(declaration);
   }
 
-  internal static bool IsSourceMember(string name) => name is "RotateLeft" or "RotateRight" or "bit";
+  internal static bool IsSourceMember(string name) => name is "RotateLeft" or "RotateRight" or "bit" or "PopCount";
 
   internal static Expression ElaborateMember(ModuleResolver resolver, ExprDotName syntax, Type receiverType,
     System.Collections.Generic.List<ActualBinding> bindings) {
@@ -48,34 +48,39 @@ internal sealed class IntegerBitwiseOperations(ModuleResolver resolver) : ASTVis
     var declaration = (NewtypeDecl)((UserDefinedType)receiverType.NormalizeExpand()).ResolvedClass;
     var width = DeclaredWidth(declaration).Value;
     var bit = syntax.SuffixName == "bit";
+    var population = syntax.SuffixName == "PopCount";
     var parameter = bit ? "i" : "k";
     if (!Enabled(resolver, declaration.Origin) || !Enabled(resolver, origin)) {
       resolver.Reporter.Error(MessageSource.Resolver, syntax,
         "integer bitwise members require --integer-bitwise in both the use and the width declaration");
     }
-    if (bindings.Count != 1 || bindings.Any(binding => binding.IsGhost ||
+    if (bindings.Count != (population ? 0 : 1) || bindings.Any(binding => binding.IsGhost ||
         binding.FormalParameterName != null && binding.FormalParameterName.val != parameter) ||
         syntax.OptTypeArguments is { Count: > 0 }) {
       resolver.Reporter.Error(MessageSource.Resolver, syntax,
-        $"integer bitwise member '{syntax.SuffixName}' expects one integer argument '{parameter}' and no type arguments");
+        $"integer bitwise member '{syntax.SuffixName}' expects {(population ? "no arguments" : $"one integer argument '{parameter}'")} and no type arguments");
       return Expression.CreateBoolLiteral(origin, false);
     }
     Expression Number(int value) => new LiteralExpr(origin, value);
     Expression Integer(Expression value) => new ConversionExpr(origin, value, Type.Int);
-    var count = bindings[0].Actual;
+    var count = population ? null : bindings[0].Actual;
     var references = resolver.SystemModuleManager.SystemModule.TopLevelDecls.OfType<IntegerBitwiseReferences>().Single();
     var receiver = new StaticReceiverExpr(origin, new UserDefinedType(origin, references.Name, references, []), false);
-    var name = bit ? "shrNat" : syntax.SuffixName == "RotateLeft" ? "rolNat" : "rorNat";
+    var name = population ? "popNat" : bit ? "shrNat" : syntax.SuffixName == "RotateLeft" ? "rolNat" : "rorNat";
+    var arguments = new System.Collections.Generic.List<ActualBinding> {
+      new(null, Number(width)), new(null, Integer(syntax.Lhs))
+    };
+    if (!population) { arguments.Add(new(null, Integer(count))); }
     var call = new ApplySuffix(origin, null,
       new ExprDotName(origin, receiver, new Name(origin, name), null),
-      new System.Collections.Generic.List<ActualBinding> {
-        new(null, Number(width)), new(null, Integer(syntax.Lhs)), new(null, Integer(count))
-      }, null);
+      arguments, null);
     // Compilation consumes exactly the source operands. Verification sees the
-    // fixed integer reference, followed by the complete nominal result predicate.
-    Expression result = new ConversionExpr(origin, call, bit ? Type.Int : receiverType) {
+    // fixed integer reference and an ordinary result conversion. Population counts
+    // target nat independently of the complete receiver predicate.
+    Expression result = new ConversionExpr(origin, call, population ? resolver.SystemModuleManager.Nat() : bit ? Type.Int : receiverType) {
       IntegerBitwiseWidth = width
     };
+    if (population) { return result; }
     if (bit) {
       result = new BinaryExpr(origin, BinaryExpr.Opcode.Eq,
         new BinaryExpr(origin, BinaryExpr.Opcode.Mod, result, Number(2)), Number(1));
@@ -96,7 +101,7 @@ internal sealed class IntegerBitwiseOperations(ModuleResolver resolver) : ASTVis
     if (newtype.Members.Any(member => IsSourceMember(member.Name)) ||
         resolver.GetClassMembers(newtype)?.Keys.Any(IsSourceMember) == true) {
       resolver.Reporter.Error(MessageSource.Resolver, newtype,
-        ":bitWidth member names RotateLeft, RotateRight and bit are reserved by --integer-bitwise");
+        ":bitWidth member names RotateLeft, RotateRight, bit and PopCount are reserved by --integer-bitwise");
       return false;
     }
     if (newtype.BaseType.NormalizeToAncestorType() is not IntType ||
