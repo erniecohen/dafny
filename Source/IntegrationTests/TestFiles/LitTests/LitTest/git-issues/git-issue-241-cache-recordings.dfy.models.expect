@@ -1,0 +1,2 @@
+persistent models smoke: PASS
+Recording release activated; native and replayed counterexample reports match

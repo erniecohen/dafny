@@ -16,3 +16,5 @@ module Client {
 module Counterexample {
   lemma ReachableFalse() { assert false; }
 }
+// RUN: python3 "%repositoryRoot/.github/review/cache-recordings-models.py" "%binaryDir/Dafny.dll" "%review-z3" "%repositoryRoot/Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-261-persistent-models.dfy" "%t.models.dir" > "%t.models"
+// RUN: %diff "%s.models.expect" "%t.models"
