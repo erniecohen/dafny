@@ -310,9 +310,11 @@ extern module object; inherited classes use that object's public type names. A
 require-based refinement loads its library once, then extends that exact exports
 object with inherited and generated declarations, preserving native class and
 trait identities. Concrete descendants of abstract refinements use their own
-required namespace; the abstract intermediate emits nothing. Require-based
-imported ancestor modules outside recursive groups remain rejected until their
-loading and identity behavior is qualified. Fully imported
+required namespace; the abstract intermediate emits nothing. Fully imported
+ancestor traits in acyclic modules may also belong to required owners. Their
+ordinary module loader extends the exact exports object and preserves the
+selected imported trait identities before group initialization. Unrelated traits
+in the same owner retain ordinary generated emission. Fully imported
 classes emit no
 generated class layout. Partial classes use the ordinary JavaScript lowering: a
 generated subclass extends the concrete module's foreign class, forwards its type
@@ -385,7 +387,7 @@ captured owners, so extending a copy fails at runtime. Incorrect results and
 reachable false assertions after native calls, construction, generated field
 initialization and trait dispatch fail with additional axioms off and on.
 Malformed required names, partial native constructors, foreign-contract
-certificates and require-based acyclic ancestor owners remain rejected.
+certificates and unsupported ancestor linkage remain rejected.
 Only the refinement-owner admission check changes; no verifier rule, obligation,
 axiom or assumption changes. Ordinary emission with the option off is unchanged.
 `git-issue-466-js-constructors.dfy` repeats that runtime matrix with generic native
@@ -431,9 +433,25 @@ generic ancestor identity checks and generated implementations. The existing
 complete-group archive and separately translated producer/client comparisons
 remain covered by the group-local hierarchy. An unrelated imported trait in the
 same module still receives ordinary emission. Unsupported ancestor owners, type
-qualifiers, require-based modules, qualified instance members and library-only
+qualifiers, qualified instance members and library-only
 ancestors have negative controls. Both option settings preserve ordinary emission
 when no group uses the hierarchy; option-off output is unchanged.
+`git-issue-466-js-required-ancestors.dfy` combines required acyclic ancestors
+with required group and concrete-refinement owners, including abstract
+intermediates. Independent C# runtime comparisons cover source, both wrapper
+modes, scheduled resolution with additional axioms, a relocated complete ancestor
+archive and separate producer/client translation. The producer contains the group;
+the separate client consumes the ancestor-owner archive and receives a native
+group implementation through that interface, checking shared ancestor identities.
+The full foreign hierarchy still cannot form a whole-group termination certificate;
+that rejection is retained. A native CommonJS cycle captures the
+ancestor owner's exports and its generic and ordinary trait objects before
+generated emission. Native callbacks then call a generated function through the
+captured owner. Wrong results and reachable false assertions remain errors with
+additional axioms off and on. Required-name validation, generated ancestor bodies,
+qualified owners and library-only ancestor producers retain rejection controls.
+Only compiler admission changes; no library, cache, verifier rule or default
+emission path changes.
 `git-issue-466-js-extern.dfy` checks each group-specific foreign linkage rejection.
 Archives with arbitrary extern contracts still cannot provide the modular
 termination certificate required by cross-module trait implementations; the
@@ -463,7 +481,7 @@ The remaining group-specific or foreign-interface boundaries include:
 | --- | --- |
 | Go | Import cycles with a foreign package and generated methods on a type owned by another package. |
 | Python | Package translation of wholly omitted groups and dotted extern package names; foreign initialization must defer callbacks into generated siblings. |
-| JavaScript | Require-based acyclic imported ancestor owners; native constructors on partial classes; imported traits requiring generated members or generated ancestors; qualified type owners and qualified instance members. |
+| JavaScript | Native constructors on partial classes; imported traits requiring generated members or generated ancestors; qualified type owners and qualified instance members. |
 | Rust | Compiled fields on refined foreign classes, two-argument type/module externs and mixed generated/foreign implementations of a trait; ordinary trait and implicit-default restrictions remain. |
 | C++ | Group-wide datatype indirection and the missing matrix features described below. |
 | Resolved Dafny | An implemented printer and executable round trip. |

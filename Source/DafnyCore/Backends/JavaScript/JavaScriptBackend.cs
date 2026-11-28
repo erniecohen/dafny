@@ -70,11 +70,8 @@ public class JavaScriptBackend : ExecutableBackend {
           "JavaScript recursive groups require require-based extern module names to be unqualified ASCII identifiers that do not conflict with unescaped JavaScript keywords or runtime bindings");
         return;
       }
-      if (moduleQualifier != null && !JavaScriptCodeGenerator.IsRecursiveGroupContext(module)) {
-        Reporter.Error(MessageSource.Compiler, module.Origin,
-          "JavaScript recursive groups require preloaded extern module objects for imported trait ancestor modules outside recursive groups; require-based linkage in this context is not yet supported");
-        return;
-      }
+      // Acyclic ancestor owners use the ordinary module loader. Selected imported
+      // traits retain the required exports object's identities, just as in a group.
       foreach (var type in module.TopLevelDecls.OfType<TopLevelDeclWithMembers>().Where(type =>
                  JavaScriptCodeGenerator.IsRecursiveGroupContext(module) ||
                  type is TraitDecl trait && jsGenerator.ImportedTraitAncestors.Contains(trait))) {

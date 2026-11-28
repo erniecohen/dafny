@@ -1,1 +1,3 @@
-// CHECK: JavaScript recursive groups require preloaded extern module objects
+// CHECK: let ForeignBase = \(function\(\)
+// CHECK: let \$module = require\("foreign\.js"\);
+// CHECK-NOT: \$module\.Parent = class

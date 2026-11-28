@@ -1,0 +1,4 @@
+CommonJS ancestor source, archive and separate-link runtime comparisons passed.
+Both wrapper modes, scheduled resolution, constructors, partial classes and trait identities checked.
+20 negative/vacuity assertions and 8 rejection controls passed.
+Dafny commands checked: 22.
