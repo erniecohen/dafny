@@ -1,0 +1,1 @@
+With `--integer-bitwise`, bounded unsigned integer newtypes now compile Boolean, shift, rotation, bit-query and population-count operations to Python, preserving semantic widths and Python 3.8 compatibility.

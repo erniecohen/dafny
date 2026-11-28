@@ -12,6 +12,43 @@ namespace Microsoft.Dafny.Compilers {
 
   class PythonCodeGenerator : SinglePassCodeGenerator {
 
+    protected override void EmitIntegerBitwise(ConversionExpr expression, bool inLetExprBody,
+      ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
+      var width = expression.IntegerBitwiseWidth.Value;
+      var name = ((FunctionCallExpr)expression.E.Resolved).Function.Name;
+      var operands = expression.IntegerBitwiseOperands.ToList();
+      var variables = operands.Select(_ => ProtectedFreshId("_integerBitwise")).ToList();
+      var x = variables[0];
+      var y = variables.Last();
+      var mask = $"((1 << {width}) - 1)";
+      // Python integers preserve every source bit, regardless of nativeType.
+      // Mask only the operations that can introduce digits outside the word.
+      var operation = name switch {
+        "andNat" => $"{x} & {y}",
+        "orNat" => $"{x} | {y}",
+        "xorNat" => $"{x} ^ {y}",
+        "notNat" => $"(~{x}) & {mask}",
+        "shlNat" => $"0 if {y} >= {width} else ({x} << {y}) & {mask}",
+        "shrNat" => $"0 if {y} >= {width} else {x} >> {y}",
+        "rolNat" => $"{x} if {y} == 0 or {y} == {width} else " +
+          $"(({x} << {y}) & {mask}) | ({x} >> ({width} - {y}))",
+        "rorNat" => $"{x} if {y} == 0 or {y} == {width} else " +
+          $"({x} >> {y}) | (({x} << ({width} - {y})) & {mask})",
+        // bin/count is available on every supported Python version (including
+        // versions before int.bit_count), and source operands are nonnegative.
+        "popNat" => $"bin({x}).count('1')",
+        _ => throw new InvalidOperationException("unexpected integer bitwise reference")
+      };
+      // Arguments are evaluated once in source order, outside the lambda's
+      // scope. Its fresh parameters also avoid capturing caller locals.
+      wr.Write($"(lambda {string.Join(", ", variables)}: {operation})(");
+      for (var i = 0; i < operands.Count; i++) {
+        if (i != 0) { wr.Write(", "); }
+        EmitExpr(operands[i], inLetExprBody, wr, wStmts);
+      }
+      wr.Write(")");
+    }
+
     private bool PythonModuleMode;
     private string PythonModuleName;
     private bool HasRecursiveGroups;
