@@ -30,6 +30,49 @@ public class VerificationGcTest {
   }
 
   [Fact]
+  public void ServerOptionIsHiddenDefaultOffAndRejectsInvalidValues() {
+    OptionRegistry.CheckOptionsAreKnown(new[] { VerifyCommand.ServerGcMemory });
+    Assert.DoesNotContain(VerifyCommand.ServerGcMemory, OptionRegistry.GlobalOptions);
+    Assert.DoesNotContain(VerifyCommand.ServerGcMemory, OptionRegistry.TranslationOptions);
+    Assert.DoesNotContain(VerifyCommand.ServerGcMemory, OptionRegistry.ModuleOptions);
+    var verify = DafnyNewCli.RootCommand.Subcommands.Single(command => command.Name == "verify");
+    Assert.Contains(VerifyCommand.ServerGcMemory, verify.Options);
+    var command = new RootCommand { VerifyCommand.ServerGcMemory };
+    Assert.True(VerifyCommand.ServerGcMemory.IsHidden);
+    Assert.Equal(0u, command.Parse(Array.Empty<string>()).GetValueForOption(VerifyCommand.ServerGcMemory));
+    Assert.Equal(0u, command.Parse("--server-gc-memory=0").GetValueForOption(VerifyCommand.ServerGcMemory));
+    Assert.Equal(1024u, command.Parse("--server-gc-memory=1024").GetValueForOption(VerifyCommand.ServerGcMemory));
+    Assert.NotEmpty(command.Parse("--server-gc-memory=invalid").Errors);
+    Assert.NotEmpty(command.Parse("--server-gc-memory=-1").Errors);
+  }
+
+  [Fact]
+  public void BoundedLaunchOverridesHeapCountsAndClearsCompetingLimitsOnlyWhenEnabled() {
+    var keys = new[] { "Percent", "SOH", "LOH", "POH", "SOHPercent", "LOHPercent", "POHPercent" }
+      .SelectMany(suffix => new[] { "DOTNET_", "COMPlus_" }.Select(prefix => prefix + "GCHeapHardLimit" + suffix)).ToArray();
+    var previous = keys.Select(Environment.GetEnvironmentVariable).ToArray();
+    try {
+      foreach (var key in keys) { Environment.SetEnvironmentVariable(key, "1"); }
+      var off = VerificationGc.StartInfo("dotnet", "entry.dll", "10.0.0", ["verify", "input.dfy"]);
+      var on = VerificationGc.StartInfo("dotnet", "entry.dll", "10.0.0", ["verify", "input.dfy"], 1024);
+      foreach (var key in keys) {
+        Assert.Equal("1", off.Environment[key]);
+        Assert.False(on.Environment.ContainsKey(key));
+      }
+      foreach (var prefix in new[] { "DOTNET_", "COMPlus_" }) {
+        Assert.Equal("0", on.Environment[prefix + "gcConcurrent"]);
+        Assert.Equal("1", on.Environment[prefix + "gcServer"]);
+        Assert.Equal("2", on.Environment[prefix + "GCHeapCount"]);
+        Assert.Equal("2", on.Environment[prefix + "GCMaxHeapCount"]);
+        Assert.Equal("40000000", on.Environment[prefix + "GCHeapHardLimit"]);
+      }
+      Assert.Equal(off.ArgumentList, on.ArgumentList);
+    } finally {
+      for (var i = 0; i < keys.Length; i++) { Environment.SetEnvironmentVariable(keys[i], previous[i]); }
+    }
+  }
+
+  [Fact]
   public void DotnetLaunchPreservesArgumentsAndRuntime() {
     string[] args = ["verify", "input with spaces.dfy", "--batch-gc", "--cores", "2"];
     var start = VerificationGc.StartInfo("dotnet", "entry with spaces.dll", "10.0.0", args);
@@ -174,7 +217,7 @@ public class VerificationGcTest {
     Assert.Equal(previous, GCSettings.LatencyMode);
   }
 
-  private static ProcessStartInfo CliStartInfo(string[] args, bool restarted = false) {
+  private static ProcessStartInfo CliStartInfo(string[] args, bool restarted = false, bool batchStartup = false) {
     var start = new ProcessStartInfo("dotnet") {
       UseShellExecute = false, RedirectStandardInput = true,
       RedirectStandardOutput = true, RedirectStandardError = true
@@ -182,14 +225,19 @@ public class VerificationGcTest {
     start.ArgumentList.Add(typeof(Dafny.Dafny).Assembly.Location);
     foreach (var arg in args) { start.ArgumentList.Add(arg); }
     // The guard control deliberately starts in Interactive mode even if the test host is Batch.
-    start.Environment["DOTNET_gcConcurrent"] = "1";
-    start.Environment["COMPlus_gcConcurrent"] = "1";
+    start.Environment["DOTNET_gcConcurrent"] = batchStartup ? "0" : "1";
+    start.Environment["COMPlus_gcConcurrent"] = batchStartup ? "0" : "1";
+    start.Environment["DOTNET_gcServer"] = "0";
+    start.Environment["COMPlus_gcServer"] = "0";
     start.Environment[VerificationGc.RestartedVariable] = restarted ? "1" : "0";
     return start;
   }
 
-  private static async Task<(int Exit, string Output)> Cli(string[] args, string input = "", bool restarted = false) {
-    using var child = Process.Start(CliStartInfo(args, restarted))!;
+  private static async Task<(int Exit, string Output)> Cli(string[] args, string input = "", bool restarted = false,
+    bool batchStartup = false, Action<ProcessStartInfo>? configure = null) {
+    var start = CliStartInfo(args, restarted, batchStartup);
+    configure?.Invoke(start);
+    using var child = Process.Start(start)!;
     try {
       var output = child.StandardOutput.ReadToEndAsync();
       var error = child.StandardError.ReadToEndAsync();
@@ -208,6 +256,66 @@ public class VerificationGcTest {
     var extra = Environment.GetEnvironmentVariable("DAFNY_EXTRA_TEST_ARGUMENTS");
     return new[] { "verify", "--batch-gc", "--cores", "2", "--type-system-refresh", "--show-snippets:false" }
       .Concat(extra == null ? Array.Empty<string>() : new[] { extra }).Concat(args).ToArray();
+  }
+
+  [Theory]
+  [InlineData(1024, false, 1, "requires --batch-gc")]
+  [InlineData(128, true, 1, "at least 256 MiB")]
+  [InlineData(1024, true, 4, "requires an explicit --verification-module-window-memory")]
+  public async Task InvalidServerPolicyIsRejectedBeforeVerification(int memory, bool batch, int window, string diagnostic) {
+    var args = VerifyArgs("--stdin", "--server-gc-memory", memory.ToString(),
+      "--verification-module-window", window.ToString());
+    if (!batch) { args = args.Where(a => a != "--batch-gc").ToArray(); }
+    var result = await Cli(args, "lemma Control() { assert false; }");
+    Assert.Equal((int)ExitValue.PREPROCESSING_ERROR, result.Exit);
+    Assert.Contains(diagnostic, result.Output);
+    Assert.DoesNotContain("Dafny program verifier", result.Output);
+  }
+
+  [Fact]
+  public async Task ServerRestartGuardRejectsBatchWorkstationGcBeforeVerification() {
+    var result = await Cli(VerifyArgs("--stdin", "--server-gc-memory", "1024"),
+      "lemma Control() { assert false; }", restarted: true, batchStartup: true);
+    Assert.Equal((int)ExitValue.PREPROCESSING_ERROR, result.Exit);
+    Assert.Contains("could not configure bounded server GC", result.Output);
+    Assert.DoesNotContain("Dafny program verifier", result.Output);
+  }
+
+  [Theory]
+  [InlineData("limit")]
+  [InlineData("count")]
+  [InlineData("per-object")]
+  [InlineData("workstation")]
+  public async Task ServerRestartGuardRejectsConflictingRuntimeConfiguration(string conflict) {
+    void Configure(ProcessStartInfo start) {
+      foreach (var prefix in new[] { "DOTNET_", "COMPlus_" }) {
+        start.Environment[prefix + "gcServer"] = conflict == "workstation" ? "0" : "1";
+        start.Environment[prefix + "GCHeapCount"] = "2";
+        start.Environment[prefix + "GCMaxHeapCount"] = conflict == "count" ? "3" : "2";
+        start.Environment[prefix + "GCHeapHardLimit"] = conflict == "limit" ? "20000000" : "40000000";
+        if (conflict == "per-object") {
+          // Their sum equals the overall limit, so only the per-object guard
+          // rejects this case; a different total would also trip the limit guard.
+          start.Environment[prefix + "GCHeapHardLimitSOH"] = "20000000";
+          start.Environment[prefix + "GCHeapHardLimitLOH"] = "10000000";
+          start.Environment[prefix + "GCHeapHardLimitPOH"] = "10000000";
+        }
+      }
+    }
+    var result = await Cli(VerifyArgs("--stdin", "--server-gc-memory", "1024"),
+      "lemma Control() { assert false; }", restarted: true, batchStartup: true, configure: Configure);
+    Assert.Equal((int)ExitValue.PREPROCESSING_ERROR, result.Exit);
+    Assert.Contains("could not configure bounded server GC", result.Output);
+    Assert.DoesNotContain("Dafny program verifier", result.Output);
+  }
+
+  [Fact]
+  public async Task ServerStartupChildForwardsAReachableFalseAssertion() {
+    var result = await Cli(VerifyArgs("--stdin", "--server-gc-memory", "1024"),
+      "lemma Positive() ensures 1 + 1 == 2 { } lemma Control() { assert false; }");
+    Assert.Equal((int)ExitValue.VERIFICATION_ERROR, result.Exit);
+    Assert.Contains("assertion might not hold", result.Output);
+    Assert.Contains("1 verified, 1 error", result.Output);
   }
 
   [Fact]

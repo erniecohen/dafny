@@ -29,12 +29,22 @@ public static class VerifyCommand {
     OptionRegistry.RegisterOption(ReleaseVerifiedModules, OptionScope.Cli);
     OptionRegistry.RegisterOption(PerformanceStatisticsOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(BatchGc, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ServerGcMemory, OptionScope.Cli);
   }
 
   public static readonly Option<bool> BatchGc = new("--batch-gc",
     "Run verification in a process configured at startup with background garbage collection disabled. " +
     "This favors throughput over responsiveness on allocation-heavy projects. " +
     "Requires the command-line executable. Default: false.") {
+    IsHidden = true
+  };
+
+  public static readonly Option<uint> ServerGcMemory = new("--server-gc-memory", () => 0,
+    "With --batch-gc, use at most two server garbage-collector heaps with this managed heap limit in MiB. " +
+    "The limit includes GC bookkeeping, not total process memory. Requires the command-line executable. " +
+    "With a module window greater than 1, also specify --verification-module-window-memory explicitly. " +
+    "0 leaves the collector unchanged; a positive limit must be at least 256 MiB.") {
+    ArgumentHelpName = "MiB",
     IsHidden = true
   };
 
@@ -83,6 +93,7 @@ public static class VerifyCommand {
     new Option[] {
         PerformanceStatisticsOption,
         BatchGc,
+        ServerGcMemory,
         CommonOptionBag.TranslationCache,
         CommonOptionBag.TranslationGlobalInputs,
         CommonOptionBag.OptimizeTranslationCopy,
