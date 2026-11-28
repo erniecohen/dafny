@@ -235,3 +235,4 @@ worst-amount	n/a	n/a	n/a	-	not an option of verify
 boogie:/cacheUsedTypes	miss	miss	miss	(none) | /cacheUsedTypes	
 boogie:/normalizeDeclarationOrder	miss	miss	miss	(none) | /normalizeDeclarationOrder	
 boogie:/structuralLiterals	miss	miss	miss	(none) | /structuralLiterals	
+persistent-ide-reports	hit	hit	hit	false | true	controls eligibility of complete IDE reports without changing solver inputs

@@ -482,6 +482,17 @@ public class Compilation : IDisposable {
         updated = true;
         return result;
       });
+      // Portable Boogie reports need native preparation for a different seed. Other backend
+      // work keeps its own FromSeed implementation and need not carry Boogie task evidence.
+      if (randomSeed != null && tasks.Any(task => task.Payload is BoogieVerificationTask nativeTask &&
+          !Caching.VerificationTaskFacts.HasSplit(nativeTask.NativeTask))) {
+        var native = await verifier.GetVerificationTasksAsync(createPreparationRequest(resolution, containingModule) with {
+          RequiresNativeTasks = true, AcceptsCachedIdeReports = false
+        }, resolution, containingModule, cancellationSource.Token);
+        moduleProofDependencies[containingModule] = native.ProofDependencies;
+        tasks = native.Preparation.GetWorkOrThrow().Where(task => GetCanVerify(task) == canVerify &&
+          (!canVerify.Origin.IsCopy || task.Source.IsReverifiedInheritedCheck)).ToList();
+      }
       if (updated || randomSeed != null) {
         updates.OnNext(new CanVerifyPartsIdentified(canVerify, tasks));
       }

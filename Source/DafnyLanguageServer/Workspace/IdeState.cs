@@ -443,12 +443,17 @@ public record IdeState(
 
   private IdeState HandleCanVerifyPartsUpdated(ILogger logger, CanVerifyPartsIdentified canVerifyPartsIdentified) {
     var previousState = this;
-    var implementations = canVerifyPartsIdentified.Parts.Select(t => BoogieVerificationReporting.GetTask(t).Split.Implementation).Distinct();
     var gutterIconManager = new GutterIconAndHoverVerificationDetailsManager(logger);
 
     var uri = canVerifyPartsIdentified.CanVerify.Origin.Uri;
-    gutterIconManager.ReportImplementationsBeforeVerification(previousState,
-      canVerifyPartsIdentified.CanVerify, implementations.ToArray());
+    var native = canVerifyPartsIdentified.Parts.Select(BoogieVerificationReporting.GetTask).ToList();
+    if (native.Any(task => Caching.VerificationTaskFacts.IdeReport(task) != null)) {
+      gutterIconManager.ReportCachedImplementations(previousState, canVerifyPartsIdentified.CanVerify,
+        native.Select(task => Caching.VerificationTaskFacts.IdeReport(task)!));
+    } else {
+      gutterIconManager.ReportImplementationsBeforeVerification(previousState,
+        canVerifyPartsIdentified.CanVerify, native.Select(task => task.Split.Implementation).Distinct().ToArray());
+    }
 
     var range = canVerifyPartsIdentified.CanVerify.NavigationRange.ToLspRange();
     var previousImplementations = previousState.CanVerifyStates[uri][range].VerificationTasks;
@@ -575,6 +580,16 @@ public record IdeState(
 
   private void UpdateGutterIconTrees(ILogger logger, VerificationUpdate verificationUpdate, IReadOnlyList<IdeVerificationTaskState> scopeGroup) {
     var gutterIconManager = new GutterIconAndHoverVerificationDetailsManager(logger);
+    if (Caching.VerificationTaskFacts.IdeReport(BoogieVerificationReporting.GetTask(verificationUpdate.VerificationTask)) is { } report) {
+      if (verificationUpdate.Status is VerificationWorkCompleted cached) {
+        var complete = scopeGroup.All(e => e.Status >= PublishedVerificationStatus.Error);
+        var resourceCount = scopeGroup.Select(e => e.RawStatus).OfType<VerificationWorkCompleted>()
+          .Sum(c => BoogieVerificationReporting.GetResult(c.Result).ResourceCount);
+        gutterIconManager.ReportCachedBatch(this, verificationUpdate.CanVerify, report,
+          BoogieVerificationReporting.GetResult(cached.Result), complete, resourceCount);
+      }
+      return;
+    }
     if (verificationUpdate.Status is VerificationWorkRunning && scopeGroup.Count(e => e.Status == PublishedVerificationStatus.Running) == 1) {
       gutterIconManager.ReportVerifyImplementationRunning(this, BoogieVerificationReporting.GetTask(verificationUpdate.VerificationTask).Split.Implementation);
     }

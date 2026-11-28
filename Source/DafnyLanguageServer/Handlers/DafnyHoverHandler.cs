@@ -258,7 +258,7 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
       string GetDescription(Boogie.ProofObligationDescription? description) {
         switch (assertionNode?.StatusVerification) {
           case GutterVerificationStatus.Verified: {
-              var successDescription = description?.SuccessDescription ?? "_no message_";
+              var successDescription = assertionNode.Report?.Description ?? description?.SuccessDescription ?? "_no message_";
               return $"{obsolescence}<span style='color:green'>**Success:**</span> " +
                      successDescription;
             }
@@ -322,7 +322,9 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
         return deltaInformation;
       }
 
-      if (counterexample is ReturnCounterexample returnCounterexample) {
+      if (assertionNode.Report is { } report) {
+        information += GetDescription(null) + report.MoreInformation;
+      } else if (counterexample is ReturnCounterexample returnCounterexample) {
         if (assertionNode.StatusVerification == GutterVerificationStatus.Error &&
             returnCounterexample.FailingEnsures.Description.SuccessDescription != "assertion always holds") {
           // Specialization for ensures marked with {:error} attribute
