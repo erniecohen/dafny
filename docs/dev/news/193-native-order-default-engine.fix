@@ -1,0 +1,1 @@
+Qualify the optional unsigned order bridges and their negative/vacuity controls with the default bitvector engine. Order now inducts on the digit split, and body runs select Z3's own case-split heuristic instead of the integer-based engine.

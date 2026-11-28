@@ -317,9 +317,69 @@ invalid-caller rejection, or fail contract well-formedness when the guard define
 a later premise (the count/divisor guards in `RightArithmetic` and `LeftArithmetic`). Exhaustion never counts as a control or mutation pass.
 The proof/control ceilings remain 2,000,000/200,000 resource units per scope.
 
-Remaining native equations include multiplication, unsigned
-division/remainder, ordering, rotations and population count. General word APIs
-at other widths and runtime lowering of integer-newtype operators also remain.
+
+## Checked native unsigned equality and order
+
+Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeOrder.dfy`
+with `--integer-bitwise`. Modules `Std.Arithmetic.IntegerBitwiseNativeOrder8`,
+`16`, `32` and `64` provide `Equal(x,y)`, `Less(x,y)` and `LessEqual(x,y)`.
+They establish, respectively:
+
+```dafny
+(x==y) == (x as int==y as int)
+(x<y) == (x as int<y as int)
+(x<=y) == (x as int<=y as int)
+```
+
+These facts are unconditional, including zero, equal operands and maximum words.
+Swap the operands to obtain greater-than and greater-or-equal, and negate the
+`Equal` result to obtain inequality. Bounded integer clients compose the facts
+with the existing checked round trips. For example, a pair can be sorted using a
+native comparison while proving the resulting bounded integers are ordered and
+preserve the two input values. This companion adds no runtime lowering of
+integer-newtype operators.
+
+### Model and checked proof boundary
+
+Interpret a word by its unsigned little-endian weighted sum U in [0,2^N).
+Uniqueness of the finite binary expansion makes U injective, giving equality
+in both directions. For unequal words, consider the greatest position at which
+the digits differ. Its weight is greater than the sum of all lower weights;
+therefore the unsigned word comparison and the comparison of U have the same
+sign. Non-strict order additionally includes equal words. This argument uses
+unsigned order throughout, including operands with their high bit set.
+
+All lemmas have checked bodies, on pinned Z3's default bitvector engine. Order
+inducts on the unsigned observations: the checked digit split identifies the
+native high digit and low bit with the integer quotient and remainder by two,
+a bit-level lemma compares two words by those digits, and an integer lemma
+compares two naturals the same way. Body runs, and the controls beside them,
+select Z3's own case-split heuristic (`--solver-option O:smt.case_split=1`) in
+place of Boogie's relevancy-based one, which makes the bit-blasted digit
+comparison cheap. This is a proof-search setting: it adds no Dafny axiom and
+leaves every theory solver at its default. The integer-based engine
+(`smt.bv.solver=2`) is not used: it can report unsatisfiable for satisfiable
+queries (https://github.com/erniecohen/dafny/issues/618). The existing
+Boolean/conversion proof closure and ordinary clients are checked with Boogie's
+settings. Including the companion is explicit; existing compiler, packaged-library and
+optional proof inputs remain unchanged.
+
+Qualification checks the full body closure and symbolic native and composed
+bounded-integer clients under both resolvers, with additional axioms off/on.
+Witnesses cover each truth value, zero, one, equal and unequal operands, maximum
+words, and both directions across the high-bit boundary. Wrong equality, strict
+and non-strict order, signed interpretations, invalid round trips and invalid
+word conversions have designated negative controls. Reachable false assertions
+follow each rule separately and all three together, with and without the body
+search setting.
+All rejections must be conclusive; timeout and exhaustion never count as a pass.
+
+Serial mutation mode negates each postcondition on concrete inhabited operands,
+(5,13) for the native lemmas, the base case (0,13) for the recursive order
+lemma and (5,13) with their digits for the integer lemma, and removes each
+digit premise of the integer lemma. Each mutated body must fail its
+postcondition. There are no new caller preconditions to mutate. Body/client and negative-control
+ceilings are 2,000,000 and 200,000 resource units per scope, respectively.
 
 ## Checked native modular subtraction
 

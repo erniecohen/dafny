@@ -1,0 +1,1 @@
+Adds explicitly included, checked unsigned equality and order bridges at native bitvector widths 8, 16, 32 and 64 under `--integer-bitwise`, with symbolic bounded-integer clients and no added axioms or compiler changes.
