@@ -1,0 +1,3 @@
+
+# Ordinary bit-vector proofs still verify under smt.bv.solver values other than 2 and near-miss solver options (https://github.com/erniecohen/dafny/issues/618).
+git-issues/github-issue-618-positive.dfy

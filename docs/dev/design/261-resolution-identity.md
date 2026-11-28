@@ -202,3 +202,32 @@ of `--pipeline-profile`, among them `cache.read`, `cache.decode`,
 `cache.materialize.read`, `cache.materialize.fill`, `cache.materialize` and `cache.register` for a
 hit; `store.anchors`, `store.capture`, `store.ownership` and `store.publish` for
 a store.
+
+
+### Quantifier allocation identities in the equality oracle
+
+`QuantifierExpr.UniqueId` is a process-wide allocation counter. Constructors,
+including resolved cloning, allocate a new value; a snapshot preserves the value
+it captured. Repeated resolution in one process therefore gives equivalent
+quantifiers different numerical counters. Comparing those numbers literally
+incorrectly rejects a warm entry under `--resolution-cache-check`.
+
+The oracle compares this field up to a consistent one-to-one renaming, in its
+own naming domain. It rejects both a split identity and two identities merged
+into one. The existing two-way graph-object correspondence still checks sharing,
+bindings and cycles, and every other quantifier field is compared normally.
+Ordinary integer values are not renamed. This is an allocation-identity rule,
+not an exception for quantifier contents.
+
+The counter's only read is the fallback spelling of `QuantifierExpr.FullName`.
+Module-scoped naming during resolution and translation instead uses the
+quantifier object as a key and a scope-local counter. This change affects only
+the opt-in equality oracle: snapshot bytes, materialized IDs, normal resolution
+and translation are unchanged.
+
+Controls resolve quantified source repeatedly in one process with serial and
+parallel workers, require actual checked warm hits, and compare emitted Boogie
+with an independently resolved baseline. Counter-collision and changed-content
+controls must be rejected. The lit control compares fresh, cold, warm and checked
+verification, requiring identical solver input, diagnostics, verdicts and per-VC
+resources, including a failing quantified assertion.

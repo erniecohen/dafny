@@ -553,6 +553,17 @@ proofs and does not establish that the whole project is verified.
    - `--release-verified-modules`
    - `--translation-workers`
 
+The hidden, default-off `--batch-gc` option runs `dafny verify` with background
+garbage collection disabled from process startup. This can improve throughput on
+allocation-heavy projects, at the cost of responsiveness during collections. The
+command-line executable starts a child with the same arguments and runtime,
+forwards its standard streams and exit code, and waits for it to finish. The
+parent stops its child on cancellation or process exit. The option requires the
+command-line executable; in-process verification APIs reject it. It changes no
+generated obligations or solver settings. `--pipeline-profile` records the active
+mode as `gcLatencyMode` in its manifest. It can also be set as `batch-gc = true` in
+a project's `[options]` table.
+
 By default `dafny verify` verifies one module at a time: it starts every symbol of a
 module, waits until all of them have finished, and only then translates and starts
 the next module, so cores can sit idle while the last proofs of a module finish.
@@ -2919,6 +2930,17 @@ and what information it produces about the verification process.
   over either. The selected value is emitted on each verification implementation,
   so it also takes precedence over `--solver-option O:smt.arith.solver=N` or the
   corresponding `--boogie /proverOpt:O:smt.arith.solver=N` option.
+
+* Z3's int-blasting bit-vector solver, `smt.bv.solver=2`, is rejected. Z3 5.1.0 reports
+  satisfiable queries of the shape Dafny emits for bit-vector subtraction as unsatisfiable
+  with it, so Dafny would verify a false assertion
+  ([issue 618](https://github.com/erniecohen/dafny/issues/618)). A solver option that selects it,
+  whether given as `--solver-option`, as `--boogie /proverOpt:`, as the legacy `/proverOpt:` or
+  in a project file, and in any spelling Z3 accepts (`O:SMT.BV.SOLVER=02`, `#x2`, `2.0`), is an
+  error before verification starts; a value that is not a number is rejected too. The other values,
+  0 (the default) and 1, are accepted. The hidden `--legacy-allow-unsound-bv-solver`, kept for
+  migration and comparison, accepts the option with a warning that the verification results
+  are untrusted.
 
 * `--integer-bitwise` - enable the compiler-owned ghost class
   `IntegerBitwiseModel` and its explicit one-step definition-unfold lemmas for

@@ -93,6 +93,11 @@ public static class BoogieOptionBag {
     IsHidden = true
   };
 
+  public static readonly Option<bool> LegacyAllowUnsoundBvSolver = new("--legacy-allow-unsound-bv-solver", () => false,
+    "Allow a solver option that selects Z3's int-blasting bit-vector solver (smt.bv.solver=2), which can prove false assertions, as before such options were rejected; verification results are then untrusted. For migration and comparison only.") {
+    IsHidden = true
+  };
+
   public static readonly Option<int> ArithmeticSolver = new("--arithmetic-solver", () => 2,
     "Select Z3's arithmetic solver (0 through 6). Module attributes {:z3ArithmeticSolver N} override this choice. Changing the solver may change verification results and resource use.");
 
@@ -172,6 +177,7 @@ public static class BoogieOptionBag {
     OptionRegistry.RegisterOption(SolverOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(ArithmeticSolver, OptionScope.Cli);
     OptionRegistry.RegisterOption(SolverOptionHelp, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyAllowUnsoundBvSolver, OptionScope.Cli);
     OptionRegistry.RegisterOption(SolverPath, OptionScope.Cli);
     OptionRegistry.RegisterOption(SolverPlugin, OptionScope.Cli);
     OptionRegistry.RegisterOption(SolverResourceLimit, OptionScope.Cli);
