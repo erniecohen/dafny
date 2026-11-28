@@ -100,7 +100,8 @@ public class IntegerBitwiseModeTests {
     const string declarations = "newtype {:bitWidth 8} U=x:nat | x<256 " +
       "ghost function Left(a:U,k:int):U { a.RotateLeft(k) } " +
       "ghost function Right(a:U,k:int):U { a.RotateRight(k) } " +
-      "ghost function Bit(a:U,i:int):bool { a.bit(i) }";
+      "ghost function Bit(a:U,i:int):bool { a.bit(i) } " +
+      "ghost function Population(a:U):nat { a.PopCount() }";
     var source = recursive ? "module A { import B " + declarations + " } module B { import A }" : declarations;
     var parsed = await ProgramParser.Parse(source, uri, reporter);
     Assert.Equal(0, reporter.ErrorCount);
@@ -109,6 +110,35 @@ public class IntegerBitwiseModeTests {
     }
     await new ProgramResolver(parsed.Program).Resolve(CancellationToken.None);
     Assert.Equal(recordedOff || recursive && !refreshed, reporter.ErrorCount > 0);
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task PopulationResultPreservesNatAndReferenceIdentity(bool refreshed) {
+    DafnyType.ResetScopes();
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    options.Set(CommonOptionBag.IntegerBitwise, true);
+    options.Set(CommonOptionBag.TypeSystemRefresh, refreshed);
+    var reporter = new BatchErrorReporter(options);
+    var parsed = await ProgramParser.Parse(
+      "newtype {:bitWidth 80} {:nativeType false} U=x:nat | 16<=x<256 witness 16 " +
+      "function Count(a:U):nat { a.PopCount() }", new Uri("untitled:population-source.dfy"), reporter);
+    await new ProgramResolver(parsed.Program).Resolve(CancellationToken.None);
+    Assert.Equal(0, reporter.ErrorCount);
+    var function = parsed.Program.DefaultModuleDef.TopLevelDecls.OfType<DefaultClassDecl>()
+      .SelectMany(declaration => declaration.Members).OfType<Function>().Single();
+    var conversion = Assert.IsType<ConversionExpr>(function.Body.Resolved);
+    Assert.Equal("nat", conversion.ToType.ToString());
+    Assert.Equal(80, conversion.IntegerBitwiseWidth);
+    var reference = Assert.IsType<FunctionCallExpr>(conversion.E.Resolved);
+    Assert.Equal("popNat", reference.Function.Name);
+    Assert.IsType<IntegerBitwiseReferences>(reference.Function.EnclosingClass);
+    Assert.Single(conversion.IntegerBitwiseOperands);
+    var clone = Assert.IsType<ConversionExpr>(new Cloner(cloneResolvedFields: true).CloneExpr(conversion));
+    Assert.Equal(80, clone.IntegerBitwiseWidth);
+    Assert.Equal("nat", clone.ToType.ToString());
   }
 
   [Theory]

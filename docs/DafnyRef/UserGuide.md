@@ -2960,8 +2960,12 @@ and what information it produces about the verification process.
   to C# at the declared semantic width, including when native storage is
   narrower. They are direct calls, not first-class function values. Their names
   are reserved on enabled width declarations; collisions with user members are
-  errors. Opaque exports expose no such members. Population-count syntax remains
-  later work. Include
+  errors. Opaque exports expose no such members. `x.PopCount()` takes no
+  arguments and returns `nat`, independent of the receiver predicate. C# uses a
+  native popcount intrinsic or counts 64-bit chunks of a BigInteger. Include
+  the optional `IntegerBitwisePopulation.dfy` and call its checked `View(N,x as int)`
+  lemma to establish the ordinary natural-result conversion and the upper bound
+  N; its `AllOnes(N)` lemma proves the all-ones case. No range fact is assumed. Include
   the optional `IntegerBitwiseCompiler.dfy` companion for checked range and algebra
   contracts. `IntegerBitwiseNative.dfy` provides checked native conversion and
   Boolean bridges at widths 8, 16, 32 and 64, independently of additional axioms.

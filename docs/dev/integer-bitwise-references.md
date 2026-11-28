@@ -432,3 +432,51 @@ malformed calls and member collisions must fail conclusively. Paired ordinary
 and ghost definitions, resolution-cache checks, clone/substitution coverage,
 serial mutations and baseline Boogie/verdict/resource comparisons qualify the
 elaboration boundary. Population-count source support is the following M6b item.
+
+
+## Population-count source member
+
+The M6b source extension stacks on https://github.com/erniecohen/dafny/pull/623,
+which in turn stacks on https://github.com/erniecohen/dafny/pull/621. With
+`--integer-bitwise`, a revealed `{:bitWidth N}` integer newtype supports the
+direct call `x.PopCount()`. It takes no value or type arguments, has result
+type `nat`, and reserves that member name on enabled width declarations.
+Opaque exports, first-class member selection and @-labels do not acquire this
+capability. Both resolvers retain the use-site and recorded declaration-mode
+checks. Other source members and the option-off path retain their prior behavior.
+
+Elaboration is a compiler-identity reference call `IntegerBitwiseModel.popNat(N,
+x as int)` followed by an ordinary conversion to `nat`. No receiver-predicate
+check applies to the count, and no range theorem or new axiom is injected.
+Explicitly include `optional/IntegerBitwisePopulation.dfy`; its checked `View`
+lemma transports the existing foundation agreement and sequence-count theorem,
+establishing `0 <= popNat(N,x) <= N` for all integers x and natural N, including
+zero width in the mathematical API. Call that lemma before source expressions
+that need its bounds; source contracts can refer to a verified wrapper function.
+The new `AllOnes` proof unfolds the existing recurrence and power equation and
+inducts on N; zero and single-bit/power cases reuse the existing checked laws.
+
+C# native carriers use `System.Numerics.BitOperations.PopCount` on their
+nonnegative unsigned observation. Arbitrary-precision values are split into
+disjoint 64-bit chunks: each low chunk contributes its native count, then a
+logical shift on the nonnegative BigInteger exposes the next chunk. The chunk
+weights do not affect the number of set bits. This loop terminates as the value
+shrinks; it allocates no byte array and does not truncate to the storage width
+or the first chunk. The result is a BigInteger natural, and the source receiver
+is evaluated once through the existing static binding. Narrow native storage
+for larger semantic widths remains valid because all stored high bits are zero.
+Other targets reject compiled source calls explicitly.
+
+`issue193-popcount-source.py` checks generic reference/sequence agreement, bounds,
+zero/all-ones/high-bit/power-of-two laws, complete compiled drivers and independent
+arithmetic-digit execution. It exhausts small words and tests structured/seeded
+inputs crossing chunk boundaries through width 256. Live false/wrong-count and
+missing-range-proof controls, strict predicates, malformed calls, ghostness,
+opacity, collisions, recorded library modes, reloads, refinement, recursive
+resolution, equality/cache controls and serial mutations qualify the boundary.
+Consumer/control scopes retain the 200,000-RU ceiling; dependency closure uses
+2,000,000. Exhaustion is never accepted as a proved theorem or failing control.
+No alternate bitvector solver engine is used.
+
+Other runtime backends and the final cumulative acceptance matrix remain
+separate milestones for https://github.com/erniecohen/dafny/issues/193.
