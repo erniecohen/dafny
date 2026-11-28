@@ -1,0 +1,1 @@
+Qualify the optional signed word bridges, their dependencies and their negative/vacuity controls exclusively with the default bitvector engine. The wide sign-bit proofs now fix the high-digit power of two once instead of unfolding it.

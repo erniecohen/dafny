@@ -1,0 +1,1 @@
+Adds explicitly included, checked signed two's-complement encoding, decoding, round trips and sign-bit bridges for 8/16/32/64-bit words under `--integer-bitwise`, with no added axioms or compiler changes.
