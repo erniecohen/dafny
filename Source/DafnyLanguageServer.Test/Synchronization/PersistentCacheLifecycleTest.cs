@@ -30,7 +30,7 @@ public partial class PersistentCacheLifecycleTest : ClientBasedLanguageServerTes
 
   private Task Start(string cache, int workers, bool audit = false,
     VerifyOnMode verifyOn = VerifyOnMode.Change, uint legacyCache = 0, bool reuseSolvers = false, bool ideReports = false,
-    bool ready = false) => SetUp(options => {
+    bool resolutionCache = true, int errorLimit = 5, bool ready = false) => SetUp(options => {
     options.Set(ProjectManager.Verification, verifyOn);
     options.Set(LanguageServer.VerifySnapshots, legacyCache);
     options.Set(ProjectManager.ReuseSolvers, reuseSolvers);
@@ -39,12 +39,14 @@ public partial class PersistentCacheLifecycleTest : ClientBasedLanguageServerTes
     options.Set(CommonOptionBag.PersistentCounterexamples, cache.Length != 0);
     options.Set(CommonOptionBag.PersistentTranslationAudit, audit);
     options.Set(CommonOptionBag.PersistentIdeReports, ideReports);
-    options.Set(CommonOptionBag.ResolutionCache, cache.Length != 0);
-    options.Set(CommonOptionBag.ResolutionCacheCheck, cache.Length != 0);
+    options.Set(CommonOptionBag.ResolutionCache, resolutionCache && cache.Length != 0);
+    options.Set(CommonOptionBag.ResolutionCacheCheck, resolutionCache && cache.Length != 0);
     options.Set(CommonOptionBag.TranslationWorkers, workers);
     options.Set(CommonOptionBag.ReadyModuleVerification, ready);
     if (ready) { options.RestartProverPerVC = true; }
     options.Set(BoogieOptionBag.Cores, 2U);
+    options.Set(BoogieOptionBag.VerificationErrorLimit, errorLimit);
+    options.ApplyBinding(BoogieOptionBag.VerificationErrorLimit);
     var solver = Environment.GetEnvironmentVariable("DAFNY_TEST_Z3") ??
       Path.Combine(AppContext.BaseDirectory, "z3", "bin", "z3-5.1.0");
     options.Set(BoogieOptionBag.SolverPath, new FileInfo(solver));

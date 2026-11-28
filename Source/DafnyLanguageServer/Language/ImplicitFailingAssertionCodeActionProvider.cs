@@ -27,22 +27,25 @@ class ImplicitFailingAssertionCodeActionProvider : DiagnosticDafnyCodeActionProv
 
     var implicitlyFailing = new List<Expression>() { };
     var explicitlyFailing = new List<Expression>() { };
+    var reported = new List<Caching.IdeAssertionAction>();
     input.VerificationTree?.Visit(tree => {
       if (tree is AssertionVerificationTree assertTree) {
         if (assertTree.Finished &&
             assertTree.Range.IntersectsOrTouches(selection) &&
-            assertTree.StatusVerification is GutterVerificationStatus.Error or GutterVerificationStatus.Inconclusive &&
-            assertTree.GetAssertion()?.Description is ProofObligationDescription description &&
+            assertTree.StatusVerification is GutterVerificationStatus.Error or GutterVerificationStatus.Inconclusive) {
+          if (assertTree.Report?.Action is { } action) { reported.Add(action); }
+          if (assertTree.GetAssertion()?.Description is ProofObligationDescription description &&
             description.GetAssertedExpr(options) is { } assertedExpr) {
-          if (description.IsImplicit) {
-            implicitlyFailing.Add(assertedExpr);
-          } else {
-            explicitlyFailing.Add(assertedExpr);
+            if (description.IsImplicit) {
+              implicitlyFailing.Add(assertedExpr);
+            } else {
+              explicitlyFailing.Add(assertedExpr);
+            }
           }
         }
       }
     });
-    if (implicitlyFailing.Count == 0 && explicitlyFailing.Count == 0) {
+    if (implicitlyFailing.Count == 0 && explicitlyFailing.Count == 0 && reported.Count == 0) {
       return null;
     }
 
@@ -57,7 +60,8 @@ class ImplicitFailingAssertionCodeActionProvider : DiagnosticDafnyCodeActionProv
       .Select(failingForall =>
         new ForallExprStatementCodeAction(options, input.Program, failingForall, selection));
 
-    return suggestedExplicitAssertions.Concat(suggestedCalcStatements).Concat(suggestedForallStatements);
+    return suggestedExplicitAssertions.Concat(suggestedCalcStatements).Concat(suggestedForallStatements)
+      .Concat(reported.Select(action => new ReportedAssertionCodeAction(options, input.Program, selection, action)));
   }
 
   protected static List<INode>? FindInnermostNodeIntersecting(INode node, Range range) {
@@ -78,19 +82,16 @@ class ImplicitFailingAssertionCodeActionProvider : DiagnosticDafnyCodeActionProv
 
   abstract class StatementInsertingCodeAction : DafnyCodeAction {
     protected readonly DafnyOptions options;
-    protected readonly Expression failingImplicitAssertion;
     protected readonly Node program;
     protected readonly Range selection;
 
     public StatementInsertingCodeAction(
       DafnyOptions options,
       Node program,
-      Expression failingImplicitAssertion,
       Range selection,
       string message
     ) : base(message) {
       this.options = options;
-      this.failingImplicitAssertion = failingImplicitAssertion;
       this.program = program;
       this.selection = selection;
     }
@@ -234,13 +235,31 @@ class ImplicitFailingAssertionCodeActionProvider : DiagnosticDafnyCodeActionProv
     protected abstract string GetStatementToInsert(string indentation);
   }
 
+  class ReportedAssertionCodeAction : StatementInsertingCodeAction {
+    private readonly Caching.IdeAssertionAction action;
+    public ReportedAssertionCodeAction(DafnyOptions options, Node program, Range selection, Caching.IdeAssertionAction action)
+      : base(options, program, selection, action.Kind == "assert" ? "Insert explicit failing assertion" :
+          action.Kind == "forall" ? "Insert a forall statement" : "Insert a calc statement") {
+      this.action = action;
+    }
+    protected override string GetStatementToInsert(string i) => action.Kind switch {
+      "assert" => $"assert {action.First};",
+      "forall" => "forall " + action.First + " ensures " + action.Second + " {\n" +
+        $"{i}  assert {action.Second};\n" + $"{i}}}",
+      _ => $"calc {(action.Kind == "iff" ? "<==> " : "")}{{\n" +
+        $"{i}  {action.First};\n" + $"{i}  {action.Second};\n" + $"{i}}}"
+    };
+  }
+
   class ExplicitAssertionDafnyCodeAction : StatementInsertingCodeAction {
+    private readonly Expression failingImplicitAssertion;
     public ExplicitAssertionDafnyCodeAction(
       DafnyOptions options,
       Node program,
       Expression failingImplicitAssertion,
       Range selection
-      ) : base(options, program, failingImplicitAssertion, selection, "Insert explicit failing assertion") {
+      ) : base(options, program, selection, "Insert explicit failing assertion") {
+      this.failingImplicitAssertion = failingImplicitAssertion;
     }
 
     protected override string GetStatementToInsert(string indentation) {
@@ -256,7 +275,7 @@ class ImplicitFailingAssertionCodeActionProvider : DiagnosticDafnyCodeActionProv
       Node program,
       BinaryExpr failingExplicit,
       Range selection
-      ) : base(options, program, failingExplicit, selection, "Insert a calc statement") {
+      ) : base(options, program, selection, "Insert a calc statement") {
       this.failingExplicit = failingExplicit;
     }
 
@@ -278,7 +297,7 @@ class ImplicitFailingAssertionCodeActionProvider : DiagnosticDafnyCodeActionProv
       Node program,
       ForallExpr failingExplicit,
       Range selection
-    ) : base(options, program, failingExplicit, selection, "Insert a forall statement") {
+    ) : base(options, program, selection, "Insert a forall statement") {
       this.failingExplicit = failingExplicit;
     }
 

@@ -534,7 +534,8 @@ public record IdeState(
 
       var nativeResult = BoogieVerificationReporting.GetResult(completed.Result);
       counterExamples = counterExamples.Concat(nativeResult.CounterExamples);
-      hitErrorLimit |= nativeResult.MaxCounterExamples == nativeResult.CounterExamples.Count;
+      hitErrorLimit |= nativeResult.MaxCounterExamples == Caching.VerificationTaskFacts.Counterexamples(
+        BoogieVerificationReporting.GetTask(verificationUpdate.VerificationTask), nativeResult);
       var newDiagnostics =
         Compilation.GetDiagnosticsFromResult(options, previousState.Uri, verificationUpdate.CanVerify,
           BoogieVerificationReporting.GetTask(verificationUpdate.VerificationTask), nativeResult);
@@ -586,7 +587,9 @@ public record IdeState(
         var resourceCount = scopeGroup.Select(e => e.RawStatus).OfType<VerificationWorkCompleted>()
           .Sum(c => BoogieVerificationReporting.GetResult(c.Result).ResourceCount);
         gutterIconManager.ReportCachedBatch(this, verificationUpdate.CanVerify, report,
-          BoogieVerificationReporting.GetResult(cached.Result), complete, resourceCount);
+          BoogieVerificationReporting.GetResult(cached.Result), complete, resourceCount,
+          scopeGroup.Select(e => e.RawStatus).OfType<VerificationWorkCompleted>()
+            .Select(c => Compilation.GetOutcome(BoogieVerificationReporting.GetResult(c.Result).Outcome)).Max());
       }
       return;
     }

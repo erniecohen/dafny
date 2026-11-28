@@ -60,13 +60,13 @@ for record in records:
 corrupt = run("corrupt", extra=extra)
 assert corrupt[:2] == cold[:2]
 assert not any(e.get("ev") == "persistent-module" and e.get("hit") for e in events("corrupt"))
-# Failed reports retain native assertion and counterexample objects, even after restart.
+# With the IDE capability disabled, failed reports retain native evidence after restart.
 failed_source = "module Cached { lemma Positive() { assert false; } }"
 failed_cache = destination / "failed-cache"
 failed_cold = run("failed-cold", overlay=failed_source, directory=failed_cache,
     extra=extra, expected_outcome="Invalid")
 failed_warm = run("failed-warm", overlay=failed_source, directory=failed_cache,
-    extra=extra, expected_outcome="Invalid")
+    expected_outcome="Invalid")
 assert failed_cold[:2] == failed_warm[:2]
 assert all(e["replayed"] for e in failed_warm[2]), "failed native task transport did not hit"
 assert not any(e.get("ev") == "persistent-module" and e.get("hit") for e in events("failed-warm"))

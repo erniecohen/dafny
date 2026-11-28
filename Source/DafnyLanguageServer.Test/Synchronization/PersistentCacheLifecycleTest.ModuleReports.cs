@@ -34,7 +34,7 @@ public partial class PersistentCacheLifecycleTest {
     await client.WaitForNotificationCompletionAsync(document.Uri, CancellationToken);
     var manager = (await Projects.GetProjectManager(document.Uri))!;
     var resolved = await manager.GetStateAfterResolutionAsync();
-    Assert.Equal(CompilationStatus.ResolutionSucceeded, resolved.Status);
+    Assert.True(resolved.Status == CompilationStatus.ResolutionSucceeded, phase + ": " + string.Join(";", resolved.GetAllDiagnostics().Select(d => d.Diagnostic.Message)));
     await manager.VerifyEverythingAsync(document.Uri.ToUri());
     IdeState? latest = null;
     using var subscription = manager.States.Subscribe(state => latest = state);
@@ -173,7 +173,8 @@ public partial class PersistentCacheLifecycleTest {
         var failedOracle = ReportFacts(failed);
         Projects.Dispose();
         await client.Shutdown();
-        await Start(cache, workers, ideReports: true, ready: ready);
+        // Opting out must retain native tasks even with complete failed reports stored.
+        await Start(cache, workers, ideReports: false, ready: ready);
         document = await CreateOpenAndWaitForResolve(Negative, file);
         var failedWarm = await CompleteReports(document, "failed warm");
         Assert.Equal(failedOracle, ReportFacts(failedWarm));

@@ -24,7 +24,7 @@ public class PersistentIdeReportTests {
   private static StoredIdeTaskReport Report(SourceLocations locations, Method method) => new("Good", "Good (correctness)",
     PersistentFailureReports.CaptureRange(locations, method.EntireRange)!,
     [new(PersistentFailureReports.CaptureRange(locations, method.Body!.Body[0].EntireRange)!,
-      "assert", "assertion always holds", "source details", [PersistentFailureReports.CaptureRange(locations, method.EntireRange)!])]);
+      "assert", "assertion always holds", "source details", [PersistentFailureReports.CaptureRange(locations, method.EntireRange)!], Dynamic: [])]);
 
   [Fact]
   public void UnconfiguredIdeLogsAreEmptyButUnsupportedLogsBypass() {
@@ -74,6 +74,17 @@ public class PersistentIdeReportTests {
     foreach (var invalid in new[] {
       assertion with { Kind = "unknown" }, assertion with { Description = null! },
       assertion with { MoreInformation = null! },
+      assertion with { Outcome = Microsoft.Boogie.SolverOutcome.Invalid },
+      assertion with { CounterexampleKind = "unsupported" },
+      assertion with { FailureDescription = null! },
+      assertion with { PostconditionFailureDescription = null! },
+      assertion with { PostconditionMoreInformation = null! },
+      assertion with { Dynamic = null! },
+      assertion with { Secondary = stored.Range },
+      assertion with { SecondaryPosition = stored.Range.Start },
+      assertion with { Action = new("unknown", "a", "b") },
+      assertion with { Action = new("calc", null!, "b") },
+      assertion with { Action = new("calc", "a", null!) },
       assertion with { Range = assertion.Range with { SourceOriginal = "stale source" } },
       assertion with { Range = assertion.Range with { Start = assertion.Range.Start with { Anchor = "missing" } } }
     }) {
@@ -98,7 +109,17 @@ public class PersistentIdeReportTests {
       stored with { Assertions = [assertion with { Kind = "call" }] },
       stored with { Assertions = [assertion with { Description = "changed" }] },
       stored with { Assertions = [assertion with { MoreInformation = "changed" }] },
-      stored with { Assertions = [assertion with { Related = [] }] }
+      stored with { Assertions = [assertion with { Related = [] }] },
+      stored with { Assertions = [assertion with { Outcome = Microsoft.Boogie.SolverOutcome.Invalid }] },
+      stored with { Assertions = [assertion with { Secondary = stored.Range }] },
+      stored with { Assertions = [assertion with { SecondaryPosition = stored.Range.Start }] },
+      stored with { Assertions = [assertion with { CounterexampleKind = "return" }] },
+      stored with { Assertions = [assertion with { FailureDescription = "changed" }] },
+      stored with { Assertions = [assertion with { PostconditionFailureDescription = "changed" }] },
+      stored with { Assertions = [assertion with { PostconditionMoreInformation = "changed" }] },
+      stored with { Assertions = [assertion with { Dynamic = [stored.Range] }] },
+      stored with { Assertions = [assertion with { Action = new("calc", "left", "right") }] },
+      stored with { Failure = new(1, []) }
     }) {
       Assert.False(PersistentIdeReports.Same(stored, changed));
       var symbol = new PersistentModuleCache.SymbolEntry("Method", "M.Good", "source", 0, 0, 0, 0);
@@ -110,16 +131,43 @@ public class PersistentIdeReportTests {
     }
   }
 
+  [Fact]
+  public async Task IdeModelsRequireCompleteModelEvidenceEvenWithoutTextExtraction() {
+    var (locations, method) = await Parse();
+    var stored = Report(locations, method);
+    var range = stored.Range;
+    var failure = new StoredFailureReport(1,
+      [new(MessageSource.Verifier, ErrorLevel.Error, range, null, ["assertion might not hold"], [])]);
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    Assert.False(options.ExtractCounterexample);
+    Assert.NotNull(PersistentFailureReports.Restore(locations, failure, options, out _));
+    Assert.Null(PersistentFailureReports.Restore(locations, failure, options, out _, requireModels: true));
+    Assert.Null(PersistentIdeReports.Restore(locations, stored with { Failure = failure }, 1,
+      options, Microsoft.Boogie.SolverOutcome.Invalid, 1));
+    Assert.Null(PersistentIdeReports.Restore(locations, stored, 1, options, Microsoft.Boogie.SolverOutcome.Invalid, 1));
+  }
+
   [Theory]
   [InlineData(false, "Name")]
   [InlineData(false, "VerboseName")]
   [InlineData(false, "Range")]
   [InlineData(false, "Assertions")]
+  [InlineData(false, "Failure")]
   [InlineData(true, "Range")]
   [InlineData(true, "Kind")]
   [InlineData(true, "Description")]
   [InlineData(true, "MoreInformation")]
   [InlineData(true, "Related")]
+  [InlineData(true, "Outcome")]
+  [InlineData(true, "Secondary")]
+  [InlineData(true, "SecondaryPosition")]
+  [InlineData(true, "CounterexampleKind")]
+  [InlineData(true, "FailureDescription")]
+  [InlineData(true, "PostconditionFailureDescription")]
+  [InlineData(true, "PostconditionMoreInformation")]
+  [InlineData(true, "Dynamic")]
+  [InlineData(true, "Action")]
   public async Task EveryReportFieldIsRequired(bool assertion, string field) {
     var (locations, method) = await Parse();
     var report = Report(locations, method);
@@ -129,4 +177,33 @@ public class PersistentIdeReportTests {
     json.AsObject().Remove(field);
     Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(json, value.GetType()));
   }
+
+  [Theory]
+  [InlineData("Kind")]
+  [InlineData("First")]
+  [InlineData("Second")]
+  public void EveryActionFieldIsRequired(string field) {
+    var value = new IdeAssertionAction("calc", "left", "right");
+    var json = JsonSerializer.SerializeToNode(value)!;
+    Assert.NotNull(JsonSerializer.Deserialize<IdeAssertionAction>(json));
+    json.AsObject().Remove(field);
+    Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IdeAssertionAction>(json));
+  }
+
+
+  [Fact]
+  public async Task SecondaryCenterIsDistinctFromItsDisplayRange() {
+    var (locations, method) = await Parse();
+    var stored = Report(locations, method);
+    var assertion = stored.Assertions[0] with {
+      Secondary = stored.Range, SecondaryPosition = locations.ProofPosition(method.Origin.Center)
+    };
+    var report = Assert.IsType<IdeTaskReport>(PersistentIdeReports.Restore(locations,
+      stored with { Assertions = [assertion] }, 1));
+    var secondary = Assert.Single(report.Assertions).SecondaryOrigin!;
+    Assert.Equal(method.EntireRange.ToLspRange(), secondary.GetLspRange());
+    Assert.Equal(method.Origin.GetLspPosition(), secondary.GetLspPosition());
+    Assert.NotEqual(secondary.GetLspRange().Start, secondary.GetLspPosition());
+  }
+
 }
