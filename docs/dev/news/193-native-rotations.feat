@@ -1,0 +1,3 @@
+Add explicitly included, checked rotate-left and rotate-right bridges from
+native bv8, bv16, bv32 and bv64 words to the integer bitwise references, for
+counts from zero through the word width, under --integer-bitwise.

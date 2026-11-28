@@ -89,5 +89,14 @@ notes linked above.
 `IntegerBitwiseNativeShifts.dfy` adds checked left/right shift and modular-addition
 bridges at the same widths. Counts include zero and the word width. Its internal
 count proofs cover the small bitvector sorts used by the existing shift rewriter.
-Subtraction, multiplication, unsigned division/remainder, ordering, rotation,
-population-count bridges and runtime lowering remain later milestones.
+Other native operations have separate, explicitly included companions.
+
+`IntegerBitwiseNativeRotations.dfy` adds checked rotate-left/right bridges for
+`bv8`, `bv16`, `bv32` and `bv64`, with natural counts from zero through the word
+width. `IntegerBitwiseNativeRotationsN.LeftRotate(x,k)` and `RightRotate(x,k)`
+identify the unsigned native result with the compiler-owned integer rotation.
+The proof checks the finite native count cases and composes the existing shift,
+addition and integer arithmetic lemmas. It adds no axiom or compiler fact.
+The power-of-two word widths are essential; a different semantic width does
+not inherit the rotation of a larger carrier. See the implementation notes for
+the proof derivation, controls and remaining backend qualification.

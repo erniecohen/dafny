@@ -317,9 +317,58 @@ invalid-caller rejection, or fail contract well-formedness when the guard define
 a later premise (the count/divisor guards in `RightArithmetic` and `LeftArithmetic`). Exhaustion never counts as a control or mutation pass.
 The proof/control ceilings remain 2,000,000/200,000 resource units per scope.
 
-Remaining native equations include multiplication, unsigned
-division/remainder, ordering, rotations and population count. General word APIs
-at other widths and runtime lowering of integer-newtype operators also remain.
+Further native equations and their qualification are described in the later
+milestones below. General word APIs at other widths remain separate work.
+
+## Checked native rotation bridges
+
+Explicitly include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeRotations.dfy`
+with `--integer-bitwise`. The modules `Std.Arithmetic.IntegerBitwiseNativeRotations8`,
+`16`, `32` and `64` provide `LeftRotate(x,k)` and `RightRotate(x,k)` for a native
+word and a natural count `k <= N`. They identify the unsigned native result with
+the compiler-owned `IntegerBitwiseModel.rolNat(N,x as int,k)` or `rorNat`
+reference. Both count zero and count N preserve the word. The API is explicitly
+included and adds checked lemmas, with no compiler change, axiom or assumption.
+
+### Model and checked derivation
+
+Put M=2^N, a=U(x), and t=k mod N. The left result is
+`(a*P(t)) % M + a/P(N-t)`, and the right result is
+`a/P(t) + (a % P(t))*P(N-t)`. Euclidean decomposition bounds these sums below M.
+The integer-only `Parts`, `LeftMeaning` and `RightMeaning` lemmas derive the
+equations from the existing power, quotient and modular-product theorems.
+`Finish` removes the final modulus using the sum's proved range. Count N is
+handled separately because the native decomposition uses N while the reference
+normalizes it to zero.
+
+The native proof uses the same small count widths as the existing shift
+rewriter: 4, 5, 6 and 7 bits. `WideCount` and `EmbedCount` check exact widening
+and conversion to the native rotate count. `ComplementCount` checks N-k.
+`NativeLeft` and `NativeRight` enumerate the finite legal count domain and
+check the native identities `rol(x,k) == (x<<k)+(x>>(N-k))` and
+`ror(x,k) == (x>>k)+(x<<(N-k))`. These are ordinary verified assertions at each
+count, not trusted tables. The existing checked shift and modular-addition
+witnesses then connect the unsigned observations. Finally the checked foundation
+transports the independently defined integer rotation to the compiler reference.
+
+These widths are powers of two. This does not justify using a larger native
+carrier's rotation at a different semantic width: the regression retains the
+12-bit-value/8-bit-carrier counterexample. It also does not close the separate
+[backend consistency qualification](https://github.com/erniecohen/dafny/issues/284).
+The runtime control checks the C# backend against integer arithmetic; it does
+not claim coverage of every backend.
+
+The regression checks every included proof body, symbolic native and integer
+input clients, individual bit meanings, inverse rotations and endpoints with
+both resolvers. Every new lemma has an inhabited `assert false` control;
+out-of-domain calls and wrong observations must fail at their designated lines.
+Serial mutation mode negates each postcondition and removes each domain guard
+as a unit, checking that the proof fails or invalid callers lose a rejection.
+Runtime controls exhaust byte inputs and legal counts, and sample wider words
+including endpoint bits and all ones. Their oracle uses integer arithmetic,
+with exact case-key coverage to detect missing executions. Additional-axiom
+qualification is available separately. No rejected bitvector engine is used;
+the proof/client ceilings remain 2,000,000/200,000 resource units per scope.
 
 ## Checked native modular subtraction
 
