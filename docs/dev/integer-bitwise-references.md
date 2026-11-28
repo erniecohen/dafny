@@ -651,7 +651,7 @@ result predicate. Other results are reconstructed as BigNumbers. Population
 counts repeatedly clear the lowest set digit and return a BigNumber natural,
 independently of the receiver predicate. Arguments are bound once, left to right,
 through the backend's existing immediately invoked arrow-function convention.
-No axioms or verifier facts are added, and Rust compilation remains unsupported.
+No axioms or verifier facts are added.
 
 `issue193-runtime-javascript.py` reuses the shared arithmetic-oracle runner and
 source programs, selecting target-compatible native storage. Its Boolean matrix
@@ -668,3 +668,38 @@ exits. Both pipes drain concurrently through the shared process waiter. The
 status writer retains stdout until disposal, so it publishes the complete
 output once. Restoring serial stderr-before-stdout draining is detected by a
 bounded timeout with a passing clean control.
+
+## Rust runtime lowering for integer newtypes
+
+All ten source operations compile to Rust with `--integer-bitwise` and the
+backend's existing `--enforce-determinism` requirement. The Rust-specific DAST
+lowering widens native inputs, calls the runtime's `integer_bitwise` module, and
+converts only the final result back to its declared storage. It preserves each
+operand once in source order and uses an absolute runtime path so source modules
+cannot capture the helper namespace. No ghost reference body is compiled.
+
+The runtime uses arbitrary-precision `BigInt` intermediates for every carrier.
+Complement, left shift and rotations mask at the declared semantic width, even
+when it exceeds the carrier width. Shifts use the whole count; zero and full-width
+rotations preserve the value, while full-width shifts yield zero. Population
+count returns an unbounded integer independently of the receiver predicate.
+Unsigned 128-bit native words and nonnative words use the same exact operations.
+Erased and explicitly wrapped newtypes are both covered. Under this option, the
+Rust DAST type mapping erases the builtin `nat` alias by declaration identity,
+including inside generated newtype constraint checks.
+The optional `small-int` runtime still has its existing signed 128-bit integer
+limit; an unrepresentable result is rejected rather than truncated.
+
+`issue193-runtime-rust.py` reuses the arithmetic digit oracles for Boolean
+operators, shifts, rotations, bit queries and population count. It exercises
+native and nonnative words, narrow carriers, strict predicates, wide and native
+counts, endpoint counts, output aliases, single evaluation and source order.
+Verification uses the Rust translation target itself. The full matrix selects
+unsigned 128-bit native storage where supported. Wrong
+results, invalid counts and triggered `assert false` controls must still fail.
+The Rust runtime regression has the same verifier obligations as the other
+backend fixtures. No verifier encoding, axiom or default option is changed.
+
+The remaining integrated acceptance is planned in
+[the final acceptance checklist](integer-bitwise-final-acceptance.md). It must
+run against the final merged revision, rather than a stacked intermediate.

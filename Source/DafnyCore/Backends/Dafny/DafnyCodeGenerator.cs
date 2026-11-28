@@ -438,7 +438,7 @@ namespace Microsoft.Dafny.Compilers {
       }
     }
 
-    private DAST.Type GenType(Type typ) {
+    protected virtual DAST.Type GenType(Type typ) {
       // TODO(shadaj): this is leaking Rust types into the AST, but we do need native types
       var xType = DatatypeWrapperEraser.SimplifyTypeAndTrimSubsetTypes(Options, typ);
 

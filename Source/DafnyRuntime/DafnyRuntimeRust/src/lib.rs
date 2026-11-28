@@ -50,6 +50,8 @@ use std::{
     vec::Vec,
 };
 
+pub mod integer_bitwise;
+
 #[cfg(not(feature = "small-int"))]
 mod big_int;
 #[cfg(not(feature = "small-int"))]
